@@ -1,0 +1,73 @@
+# Docker Compose 配置
+
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: starlog-db
+    environment:
+      POSTGRES_USER: starlog
+      POSTGRES_PASSWORD: starlog123
+      POSTGRES_DB: starlog
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U starlog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: starlog-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python 金融服务
+  finance-service:
+    build:
+      context: ./services/finance
+      dockerfile: Dockerfile
+    container_name: starlog-finance
+    ports:
+      - "8081:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Next.js 前端
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: starlog-web
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://starlog:starlog123@postgres:5432/starlog
+      - REDIS_URL=redis://redis:6379
+      - FINANCE_SERVICE_URL=http://finance-service:8000
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    depends_on:
+      - postgres
+      - redis
+      - finance-service
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

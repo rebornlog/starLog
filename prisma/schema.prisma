@@ -1,0 +1,107 @@
+// Prisma Schema for starLog
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// 知识库文档
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  summary     String?
+  content     String   @db.Text
+  excerpt     String?
+  coverImage  String?
+  tags        String[]
+  category    String?
+  isPublished Boolean  @default(false)
+  viewCount   Int      @default(0)
+  downloadCount Int    @default(0)
+  
+  // 文件信息
+  filePath    String?
+  fileSize    Int?     // bytes
+  fileType    String?  // mime type
+  
+  // SEO
+  metaTitle   String?
+  metaDesc    String?
+  keywords    String[]
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  // 全文搜索索引
+  @@index([title])
+  @@index([tags])
+  @@index([category])
+  @@index([isPublished])
+}
+
+/// 金融数据缓存
+model StockData {
+  id        String   @id @default(cuid())
+  symbol    String
+  market    String   @default("US")  // US, CN, CRYPTO
+  
+  // 实时数据
+  price     Float?
+  change    Float?
+  changePercent Float?
+  high      Float?
+  low       Float?
+  open      Float?
+  previousClose Float?
+  volume    BigInt?
+  
+  // 时间序列数据 (JSON 存储 K 线)
+  candles   Json?    // [{t, o, h, l, c, v}]
+  
+  // 更新时间
+  updatedAt DateTime @updatedAt
+  
+  @@unique([symbol, market])
+  @@index([symbol])
+  @@index([market])
+}
+
+/// 技术分析指标
+model TechnicalIndicator {
+  id        String   @id @default(cuid())
+  symbol    String
+  type      String   // MA, MACD, RSI, Bollinger
+  period    String   // 1d, 1h, 15m
+  parameters Json    // { period: 20, etc }
+  values    Json     // 指标值
+  calculatedAt DateTime @default(now())
+  
+  @@index([symbol, type])
+}
+
+/// 用户收藏/书签
+model Bookmark {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  tags      String[]
+  notes     String?
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([tags])
+}
+
+/// 系统配置
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

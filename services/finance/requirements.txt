@@ -1,0 +1,4 @@
+# Python 金融数据服务 - 简化版 (Python 3.6 兼容)
+fastapi==0.68.0
+uvicorn==0.14.0
+requests==2.27.0
