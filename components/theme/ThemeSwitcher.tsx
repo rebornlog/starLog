@@ -1,35 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTheme } from '@/lib/themes/ThemeProvider'
-import { themes, Theme } from '@/lib/themes/themes'
+import { themes } from '@/lib/themes/themes'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 
 export default function ThemeSwitcher() {
-  const themeContext = useTheme()
-  const [currentTheme, setCurrentTheme] = useState<Theme>(themes[0])
+  const { currentTheme, setTheme, toggleDarkMode } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  // 确保主题上下文已加载
-  useEffect(() => {
-    if (themeContext) {
-      setCurrentTheme(themeContext.currentTheme)
-      setIsLoaded(true)
-    }
-  }, [themeContext])
-
-  if (!isLoaded || !themeContext) {
-    return null
-  }
-
-  const { setTheme, toggleDarkMode } = themeContext
 
   return (
     <>
-      {/* 主题切换按钮 */}
+      {/* 主题切换按钮 - 右下角浮动 */}
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 group"
@@ -81,8 +65,7 @@ export default function ThemeSwitcher() {
                     <div>
                       <Dialog.Title
                         as="h3"
-                        className="text-2xl font-bold"
-                        style={{ color: 'var(--theme-text)' }}
+                        className="text-2xl font-bold text-gray-900 dark:text-gray-100"
                       >
                         🎨 选择主题
                       </Dialog.Title>
@@ -104,6 +87,7 @@ export default function ThemeSwitcher() {
                       <button
                         onClick={toggleDarkMode}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xl"
+                        aria-label="切换明暗模式"
                       >
                         🌙
                       </button>
@@ -112,6 +96,7 @@ export default function ThemeSwitcher() {
                       <button
                         onClick={() => setIsOpen(false)}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xl"
+                        aria-label="关闭"
                       >
                         ✕
                       </button>
@@ -134,7 +119,7 @@ export default function ThemeSwitcher() {
                         className={`
                           relative overflow-hidden rounded-xl p-4 transition-all duration-300
                           hover:scale-105 hover:shadow-xl
-                          ${currentTheme.id === theme.id ? 'ring-4 ring-offset-2' : ''}
+                          ${currentTheme.id === theme.id ? 'ring-4 ring-offset-2 ring-gray-300 dark:ring-gray-600' : ''}
                         `}
                         style={{
                           background: theme.colors.background,

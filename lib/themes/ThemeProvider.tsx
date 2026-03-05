@@ -1,36 +1,54 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { themes, Theme, getThemeById } from '@/lib/themes/themes'
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import { themes, Theme, getThemeById } from './themes'
+
+interface ThemeProviderContextType {
+  currentTheme: Theme
+  setTheme: (themeId: string) => void
+  toggleDarkMode: () => void
+}
+
+const ThemeProviderContext = createContext<ThemeProviderContextType | undefined>(undefined)
+
+export function useTheme() {
+  const context = useContext(ThemeProviderContext)
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider')
+  }
+  return context
+}
 
 interface ThemeProviderProps {
-  children: React.ReactNode
+  children: ReactNode
   defaultThemeId?: string
 }
 
 export function ThemeProvider({ children, defaultThemeId = 'totoro' }: ThemeProviderProps) {
-  const [currentTheme, setCurrentTheme] = useState<Theme>(() => getThemeById(defaultThemeId))
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [currentTheme, setCurrentTheme] = useState<Theme>(getThemeById(defaultThemeId))
 
-  // 从 localStorage 加载主题
+  // 从 localStorage 加载主题（仅在客户端）
   useEffect(() => {
     const savedTheme = localStorage.getItem('starlog-theme')
-    if (savedTheme) {
+    if (savedTheme && savedTheme !== 'null') {
       const theme = getThemeById(savedTheme)
-      setCurrentTheme(theme)
-      applyTheme(theme)
+      if (theme) {
+        setCurrentTheme(theme)
+        applyThemeToDocument(theme)
+      }
     } else {
-      applyTheme(getThemeById(defaultThemeId))
+      applyThemeToDocument(getThemeById(defaultThemeId))
     }
-    setIsLoaded(true)
-  }, [defaultThemeId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 应用主题到全局
-  const applyTheme = (theme: Theme) => {
+  const applyThemeToDocument = (theme: Theme) => {
+    if (typeof window === 'undefined') return
+    
     const root = document.documentElement
     const colors = theme.colors
 
-    // 设置 CSS 变量
     root.style.setProperty('--theme-primary', colors.primary)
     root.style.setProperty('--theme-primary-dark', colors.primaryDark)
     root.style.setProperty('--theme-primary-light', colors.primaryLight)
@@ -48,10 +66,12 @@ export function ThemeProvider({ children, defaultThemeId = 'totoro' }: ThemeProv
     root.style.setProperty('--theme-radius', theme.borderRadius)
     root.style.setProperty('--theme-shadow', theme.shadow)
 
-    // 保存主题 ID
-    localStorage.setItem('starlog-theme', theme.id)
+    try {
+      localStorage.setItem('starlog-theme', theme.id)
+    } catch (e) {
+      console.warn('Failed to save theme:', e)
+    }
 
-    // 更新 data-theme 属性
     root.setAttribute('data-theme', theme.id)
   }
 
@@ -59,25 +79,27 @@ export function ThemeProvider({ children, defaultThemeId = 'totoro' }: ThemeProv
   const setTheme = (themeId: string) => {
     const theme = getThemeById(themeId)
     setCurrentTheme(theme)
-    applyTheme(theme)
+    applyThemeToDocument(theme)
   }
 
   // 切换明暗模式
   const toggleDarkMode = () => {
+    if (typeof window === 'undefined') return
+    
     const root = document.documentElement
     const isDark = root.classList.contains('dark')
     
     if (isDark) {
       root.classList.remove('dark')
-      localStorage.setItem('starlog-dark', 'false')
+      try {
+        localStorage.setItem('starlog-dark', 'false')
+      } catch (e) {}
     } else {
       root.classList.add('dark')
-      localStorage.setItem('starlog-dark', 'true')
+      try {
+        localStorage.setItem('starlog-dark', 'true')
+      } catch (e) {}
     }
-  }
-
-  if (!isLoaded) {
-    return null
   }
 
   return (
@@ -85,23 +107,4 @@ export function ThemeProvider({ children, defaultThemeId = 'totoro' }: ThemeProv
       {children}
     </ThemeProviderContext.Provider>
   )
-}
-
-// Context
-import { createContext, useContext } from 'react'
-
-interface ThemeProviderContextType {
-  currentTheme: Theme
-  setTheme: (themeId: string) => void
-  toggleDarkMode: () => void
-}
-
-const ThemeProviderContext = createContext<ThemeProviderContextType | undefined>(undefined)
-
-export function useTheme() {
-  const context = useContext(ThemeProviderContext)
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return context
 }
