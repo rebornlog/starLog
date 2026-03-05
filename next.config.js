@@ -68,6 +68,8 @@ module.exports = () => {
     basePath,
     reactStrictMode: true,
     trailingSlash: true,
+    // 允许外网 IP 访问开发服务器
+    allowedDevOrigins: ['47.79.20.10:3000', '172.17.13.144:3000', 'localhost:3000'],
     turbopack: {
       root: process.cwd(),
       rules: {
