@@ -1,28 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTheme } from '@/lib/themes/ThemeProvider'
 import { themes } from '@/lib/themes/themes'
 
 export default function ThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
   
-  // 安全获取 theme context，即使 context 不存在也不会崩溃
-  const { currentTheme, setTheme } = useTheme()
-
-  // 确保组件只在客户端渲染
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  // 服务端不渲染
-  if (!isMounted) {
-    return null
-  }
-
-  // 确保 theme 有值
-  const theme = currentTheme || themes[0]
+  // 使用 theme context，如果不可用则使用默认值
+  const themeContext = useTheme()
+  const theme = themeContext?.currentTheme || themes[0]
+  const setTheme = themeContext?.setTheme || (() => {})
 
   return (
     <>
