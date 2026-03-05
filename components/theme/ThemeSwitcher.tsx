@@ -1,15 +1,31 @@
 'use client'
 
-import { useState } from 'react'
-import { ThemeProvider, useTheme } from '@/lib/themes/ThemeProvider'
-import { themes } from '@/lib/themes/themes'
+import { useState, useEffect } from 'react'
+import { useTheme } from '@/lib/themes/ThemeProvider'
+import { themes, Theme } from '@/lib/themes/themes'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 
 export default function ThemeSwitcher() {
-  const { currentTheme, setTheme, toggleDarkMode } = useTheme()
+  const themeContext = useTheme()
+  const [currentTheme, setCurrentTheme] = useState<Theme>(themes[0])
   const [isOpen, setIsOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // 确保主题上下文已加载
+  useEffect(() => {
+    if (themeContext) {
+      setCurrentTheme(themeContext.currentTheme)
+      setIsLoaded(true)
+    }
+  }, [themeContext])
+
+  if (!isLoaded || !themeContext) {
+    return null
+  }
+
+  const { setTheme, toggleDarkMode } = themeContext
 
   return (
     <>
@@ -118,7 +134,7 @@ export default function ThemeSwitcher() {
                         className={`
                           relative overflow-hidden rounded-xl p-4 transition-all duration-300
                           hover:scale-105 hover:shadow-xl
-                          ${currentTheme.id === theme.id ? 'ring-4 ring-offset-2 ring-' + theme.colors.primary.replace('#', '') : ''}
+                          ${currentTheme.id === theme.id ? 'ring-4 ring-offset-2' : ''}
                         `}
                         style={{
                           background: theme.colors.background,
