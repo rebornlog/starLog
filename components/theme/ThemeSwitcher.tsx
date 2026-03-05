@@ -1,178 +1,129 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTheme } from '@/lib/themes/ThemeProvider'
 import { themes } from '@/lib/themes/themes'
-import { Dialog, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
 
 export default function ThemeSwitcher() {
-  const { currentTheme, setTheme, toggleDarkMode } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isMounted, setIsMounted] = useState(false)
+  
+  // 安全获取 theme context，即使 context 不存在也不会崩溃
+  const { currentTheme, setTheme } = useTheme()
+
+  // 确保组件只在客户端渲染
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // 服务端不渲染
+  if (!isMounted) {
+    return null
+  }
+
+  // 确保 theme 有值
+  const theme = currentTheme || themes[0]
 
   return (
     <>
-      {/* 主题切换按钮 - 右下角浮动 */}
+      {/* 右下角浮动按钮 */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 group"
+        className="fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer"
         style={{
-          background: currentTheme.colors.primary,
+          background: theme.colors?.primary || '#4F836B',
           color: '#FFFFFF',
         }}
         aria-label="切换主题"
+        type="button"
       >
-        <span className="text-2xl group-hover:rotate-12 transition-transform duration-300 inline-block">
-          {currentTheme.icon}
-        </span>
-        
-        {/* Tooltip */}
-        <span className="absolute -top-10 right-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-          {currentTheme.name}
+        <span className="text-2xl inline-block">
+          {theme.icon || '🌿'}
         </span>
       </button>
 
-      {/* 主题选择器对话框 */}
-      <Transition appear show={isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
+      {/* 主题选择对话框 */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
+            {/* 头部 */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                🎨 选择主题
+              </h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-xl transition-colors"
+                type="button"
+                aria-label="关闭对话框"
               >
-                <Dialog.Panel className="w-full max-w-5xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-xl transition-all">
-                  {/* 头部 */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <Dialog.Title
-                        as="h3"
-                        className="text-2xl font-bold text-gray-900 dark:text-gray-100"
-                      >
-                        🎨 选择主题
-                      </Dialog.Title>
-                      <p className="text-sm text-gray-500 mt-1">
-                        当前主题：<span className="font-medium">{currentTheme.name}</span>
-                      </p>
+                ✕
+              </button>
+            </div>
+
+            {/* 主题网格 */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {themes.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setTheme(t.id)
+                    setIsOpen(false)
+                  }}
+                  className="relative overflow-hidden rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer text-left"
+                  style={{
+                    background: t.colors?.background || '#FFFFFF',
+                    border: theme.id === t.id ? `2px solid ${t.colors?.primary}` : '2px solid transparent',
+                  }}
+                  type="button"
+                  aria-label={`选择 ${t.name} 主题`}
+                >
+                  {/* 预览色块 */}
+                  <div 
+                    className="h-20 rounded-lg mb-3 shadow-md"
+                    style={{ background: t.gradient }}
+                  />
+                  
+                  {/* 主题信息 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-2xl" role="img" aria-label={t.name}>
+                        {t.icon}
+                      </span>
+                      <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                        {t.name}
+                      </span>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
-                      {/* 视图切换 */}
-                      <button
-                        onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        {viewMode === 'grid' ? '📋' : '🔲'}
-                      </button>
-                      
-                      {/* 明暗模式切换 */}
-                      <button
-                        onClick={toggleDarkMode}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xl"
-                        aria-label="切换明暗模式"
-                      >
-                        🌙
-                      </button>
-                      
-                      {/* 关闭按钮 */}
-                      <button
-                        onClick={() => setIsOpen(false)}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xl"
-                        aria-label="关闭"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 主题网格 */}
-                  <div className={
-                    viewMode === 'grid' 
-                      ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4'
-                      : 'space-y-3'
-                  }>
-                    {themes.map((theme) => (
-                      <button
-                        key={theme.id}
-                        onClick={() => {
-                          setTheme(theme.id)
-                          setIsOpen(false)
-                        }}
-                        className={`
-                          relative overflow-hidden rounded-xl p-4 transition-all duration-300
-                          hover:scale-105 hover:shadow-xl
-                          ${currentTheme.id === theme.id ? 'ring-4 ring-offset-2 ring-gray-300 dark:ring-gray-600' : ''}
-                        `}
-                        style={{
-                          background: theme.colors.background,
-                          border: `2px solid ${currentTheme.id === theme.id ? theme.colors.primary : 'transparent'}`,
-                        }}
-                      >
-                        {/* 预览色块 */}
-                        <div 
-                          className="h-20 rounded-lg mb-3 shadow-md"
-                          style={{ background: theme.gradient }}
-                        />
-                        
-                        {/* 主题信息 */}
-                        <div className="text-left">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-2xl">{theme.icon}</span>
-                            <span 
-                              className="font-semibold text-sm"
-                              style={{ color: theme.colors.text }}
-                            >
-                              {theme.name}
-                            </span>
-                          </div>
-                          <p 
-                            className="text-xs opacity-70 line-clamp-2"
-                            style={{ color: theme.colors.textMuted }}
-                          >
-                            {theme.description}
-                          </p>
-                        </div>
-
-                        {/* 当前标记 */}
-                        {currentTheme.id === theme.id && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center">
-                            <span className="text-green-500 text-lg">✓</span>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* 底部提示 */}
-                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-500 text-center">
-                      💡 提示：主题会自动保存，下次访问时生效
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {t.description}
                     </p>
                   </div>
-                </Dialog.Panel>
-              </Transition.Child>
+                  
+                  {/* 当前标记 */}
+                  {theme.id === t.id && (
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center">
+                      <span className="text-green-500 text-lg">✓</span>
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
+
+            {/* 底部提示 */}
+            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+              💡 提示：主题会自动保存，下次访问时生效
+            </p>
           </div>
-        </Dialog>
-      </Transition>
+        </div>
+      )}
     </>
   )
 }
