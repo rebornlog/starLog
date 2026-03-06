@@ -9,8 +9,7 @@ import Header from '@/components/Header'
 import SectionContainer from '@/components/SectionContainer'
 import Footer from '@/components/Footer'
 import siteMetadata from '@/data/siteMetadata'
-import { ThemeProvider } from '@/lib/themes/ThemeProvider'
-import ThemeSwitcher from '@/components/theme/ThemeSwitcher'
+import ThemeWrapper from '@/components/theme/ThemeWrapper'
 import { Metadata } from 'next'
 
 const space_grotesk = Space_Grotesk({
@@ -83,21 +82,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         color="#5bbad5"
       />
       <meta name="msapplication-TileColor" content="#000000" />
-      <meta
-        name="theme-color"
-        media="(prefers-color-scheme: light)"
-        content="#fff"
-        mediaQuery="(prefers-color-scheme: dark)"
-        content="#000"
-      />
+      <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
+      <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
       <link rel="alternate" type="application/rss+xml" href={`${basePath}/feed.xml`} />
       <body
         className="bg-white text-black antialiased dark:bg-gray-950 dark:text-white"
+        suppressHydrationWarning
         style={{
           fontFamily: 'var(--theme-font, system-ui, sans-serif)',
         }}
       >
-        <ThemeProvider defaultThemeId="totoro">
+        <ThemeWrapper>
           <SectionContainer>
             <div className="flex h-screen flex-col">
               <Analytics analyticsConfig={siteMetadata.analytics as AnalyticsConfig} />
@@ -106,8 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </SectionContainer>
           <Footer />
-          <ThemeSwitcher />
-        </ThemeProvider>
+        </ThemeWrapper>
       </body>
     </html>
   )

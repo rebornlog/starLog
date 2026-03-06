@@ -1,52 +1,39 @@
 'use client'
-import { useState, useEffect, createContext, useContext } from 'react'
-import { themes, getThemeById } from './themes'
+import { useEffect, useState, ReactNode } from 'react'
+import { themes, getThemeById, Theme } from './themes'
 
-const ThemeContext = createContext(null)
-
-export function useTheme() {
-  return useContext(ThemeContext) || {
-    currentTheme: themes[0],
-    setTheme: () => {},
-    toggleDarkMode: () => {}
-  }
-}
-
-export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(themes[0])
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('starlog-theme')
-    const t = saved ? getThemeById(saved) : themes[0]
-    setThemeState(t || themes[0])
-    applyTheme(t || themes[0])
+    setMounted(true)
+    // 初始化主题 - 固定使用龙猫主题
+    const theme = themes[0]
+    applyTheme(theme)
   }, [])
 
-  const applyTheme = (t) => {
-    if (typeof document === 'undefined') return
+  const applyTheme = (theme: Theme) => {
+    if (!theme) return
     const root = document.documentElement
-    const c = t.colors
+    const c = theme.colors
     root.style.setProperty('--theme-primary', c.primary)
+    root.style.setProperty('--theme-primary-dark', c.primaryDark)
+    root.style.setProperty('--theme-primary-light', c.primaryLight)
+    root.style.setProperty('--theme-secondary', c.secondary)
+    root.style.setProperty('--theme-accent', c.accent)
     root.style.setProperty('--theme-background', c.background)
+    root.style.setProperty('--theme-surface', c.surface)
     root.style.setProperty('--theme-text', c.text)
-    root.style.setProperty('--theme-gradient', t.gradient)
-    root.style.setProperty('--theme-font', t.fontFamily)
-    localStorage.setItem('starlog-theme', t.id)
+    root.style.setProperty('--theme-text-muted', c.textMuted)
+    root.style.setProperty('--theme-gradient', theme.gradient)
+    root.style.setProperty('--theme-font', theme.fontFamily)
+    root.style.setProperty('--theme-radius', theme.borderRadius)
+    root.setAttribute('data-theme', theme.id)
   }
 
-  const setTheme = (id) => {
-    const t = getThemeById(id)
-    setThemeState(t)
-    applyTheme(t)
+  if (!mounted) {
+    return <>{children}</>
   }
 
-  const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark')
-  }
-
-  return (
-    <ThemeContext.Provider value={{ currentTheme: theme, setTheme, toggleDarkMode }}>
-      {children}
-    </ThemeContext.Provider>
-  )
+  return <>{children}</>
 }

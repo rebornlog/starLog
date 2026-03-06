@@ -4,90 +4,135 @@ import Link from 'next/link'
 
 export default function Home() {
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="text-center max-w-4xl mx-auto">
-        {/* 标题 */}
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-green-500 via-emerald-400 to-pink-500 bg-clip-text text-transparent">
-          🌿 starLog
-        </h1>
-        
-        {/* 副标题 */}
-        <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-4">
-          个人知识库与金融分析平台
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+      <div className="text-center max-w-5xl mx-auto">
+        {/* 宫崎骏风格标题区域 */}
+        <div className="mb-8 relative">
+          {/* 装饰性云朵 */}
+          <div className="absolute -top-8 -left-8 text-6xl animate-pulse opacity-60">☁️</div>
+          <div className="absolute -top-12 -right-12 text-5xl animate-pulse opacity-40 delay-300">☁️</div>
+          
+          {/* 主标题 */}
+          <h1 className="text-6xl md:text-8xl font-bold mb-4 relative z-10">
+            <span className="bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400 bg-clip-text text-transparent drop-shadow-lg">
+              🌿 starLog
+            </span>
+          </h1>
+          
+          {/* 装饰性植物 */}
+          <div className="flex justify-center gap-2 text-3xl mb-4">
+            <span className="animate-bounce delay-100">🌱</span>
+            <span className="animate-bounce delay-200">🌿</span>
+            <span className="animate-bounce delay-300">🍃</span>
+            <span className="animate-bounce delay-400">🌲</span>
+            <span className="animate-bounce delay-500">🌳</span>
+          </div>
+        </div>
+
+        {/* 副标题 - 宫崎骏风格描述 */}
+        <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-200 mb-3 font-medium">
+          像龙猫森林一样宁静的知识花园
         </p>
-        
-        {/* 描述 */}
-        <p className="text-lg text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
-          📝 记录技术成长 | 📈 追踪市场动态 | 🎨 10 套主题切换
+        <p className="text-lg text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+          在这里，记录技术的成长轨迹，追踪市场的起伏变化<br/>
+          每一篇笔记都是一颗种子，终将长成参天大树
         </p>
 
-        {/* 快捷按钮 */}
-        <div className="flex flex-wrap gap-4 justify-center mb-16">
+        {/* 主要功能入口 - 卡片式设计 */}
+        <div className="grid md:grid-cols-3 gap-6 mb-16">
+          {/* 博客卡片 */}
           <Link 
             href="/blog" 
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-1"
+            className="group bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-green-200 dark:border-green-800"
           >
-            📖 开始阅读
+            <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">📚</div>
+            <h3 className="text-2xl font-bold mb-3 text-green-800 dark:text-green-200">
+              技术博客
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              记录开发路上的点点滴滴<br/>
+              分享实战经验与技术思考
+            </p>
+            <div className="mt-4 text-green-600 dark:text-green-400 font-medium group-hover:translate-x-2 transition-transform duration-300">
+              开始阅读 →
+            </div>
           </Link>
+
+          {/* 金融数据卡片 */}
           <a 
             href="http://47.79.20.10:8081/stocks/popular" 
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-1"
+            className="group bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-blue-200 dark:border-blue-800"
           >
-            📈 查看行情
+            <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">📈</div>
+            <h3 className="text-2xl font-bold mb-3 text-blue-800 dark:text-blue-200">
+              金融市场
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              A 股实时行情追踪<br/>
+              市场动态一目了然
+            </p>
+            <div className="mt-4 text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-2 transition-transform duration-300">
+              查看行情 →
+            </div>
           </a>
-          <a 
-            href="http://47.79.20.10:8081/docs" 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-1"
-          >
-            📚 API 文档
-          </a>
-        </div>
 
-        {/* 特色功能卡片 */}
-        <div className="grid md:grid-cols-3 gap-6 text-left">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-green-100 dark:border-green-900 hover:shadow-xl transition-shadow duration-300">
-            <div className="text-5xl mb-4">📝</div>
-            <h3 className="text-xl font-semibold mb-2 text-green-700 dark:text-green-300">
-              技术博客
+          {/* 主题切换卡片 */}
+          <div className="group bg-gradient-to-br from-pink-50 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-pink-200 dark:border-pink-800">
+            <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">🎨</div>
+            <h3 className="text-2xl font-bold mb-3 text-pink-800 dark:text-pink-200">
+              主题花园
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              记录开发经验、技术分享、项目实战
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              10 套精美主题随心切换<br/>
+              点击右下角按钮探索
             </p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-green-100 dark:border-green-900 hover:shadow-xl transition-shadow duration-300">
-            <div className="text-5xl mb-4">📈</div>
-            <h3 className="text-xl font-semibold mb-2 text-green-700 dark:text-green-300">
-              金融数据
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              A 股实时行情、市场概览、热门股票
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-green-100 dark:border-green-900 hover:shadow-xl transition-shadow duration-300">
-            <div className="text-5xl mb-4">🎨</div>
-            <h3 className="text-xl font-semibold mb-2 text-green-700 dark:text-green-300">
-              主题切换
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              10 套高级主题，点击右下角按钮切换
-            </p>
+            <div className="mt-4 text-pink-600 dark:text-pink-400 font-medium">
+              🌿 试试点击右下角
+            </div>
           </div>
         </div>
 
-        {/* 主题切换提示 */}
-        <div className="mt-16 p-6 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-200 dark:border-green-800">
-          <p className="text-gray-700 dark:text-gray-300 text-lg">
-            🎨 <strong>试试点击右下角的</strong> <span className="text-3xl align-middle animate-bounce inline-block">🌿</span> <strong>按钮切换主题！</strong>
+        {/* 主题展示区域 */}
+        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 rounded-3xl p-8 border border-green-200 dark:border-green-800 shadow-inner">
+          <h2 className="text-2xl font-bold mb-6 text-green-800 dark:text-green-200">
+            🎨 已上线主题
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { icon: '🌿', name: '龙猫森林' },
+              { icon: '🌙', name: '午夜蓝调' },
+              { icon: '🌅', name: '落日余晖' },
+              { icon: '❄️', name: '极地冰川' },
+              { icon: '🌸', name: '樱花飞舞' },
+              { icon: '💎', name: '翡翠绿洲' },
+              { icon: '⚫', name: '极简黑白' },
+              { icon: '🌊', name: '深海秘境' },
+              { icon: '🍯', name: '琥珀流光' },
+              { icon: '🤖', name: '赛博朋克' },
+            ].map((theme) => (
+              <div 
+                key={theme.name}
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="text-3xl mb-2">{theme.icon}</div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{theme.name}</div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-gray-600 dark:text-gray-400 text-center">
+            ✨ 点击右下角的 <span className="text-2xl align-middle animate-bounce inline-block">🌿</span> 按钮，开启你的主题之旅
           </p>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
-            已上线 10 套主题：龙猫森林、午夜蓝调、落日余晖、极地冰川、樱花飞舞...
-          </p>
+        </div>
+
+        {/* 底部装饰 */}
+        <div className="mt-16 flex justify-center gap-4 text-4xl opacity-60">
+          <span className="hover:animate-bounce cursor-default">🍄</span>
+          <span className="hover:animate-bounce cursor-default delay-100">🌻</span>
+          <span className="hover:animate-bounce cursor-default delay-200">🦋</span>
+          <span className="hover:animate-bounce cursor-default delay-300">🐞</span>
+          <span className="hover:animate-bounce cursor-default delay-400">🌼</span>
         </div>
       </div>
     </div>
