@@ -292,8 +292,8 @@ export default function Home() {
       </main>
 
       {/* 固定在底部的装饰图标 */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-gray-900 dark:via-gray-900/95 pt-8 pb-4 z-50">
-        <div className="flex flex-col items-center gap-2">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/98 dark:bg-gray-900/98 backdrop-blur-sm border-t border-gray-200 dark:border-gray-800 py-4 z-50">
+        <div className="flex flex-col items-center gap-3">
           <div className="flex justify-center gap-4 text-3xl">
             <span className="hover:animate-bounce cursor-pointer">🍄</span>
             <span className="hover:animate-bounce cursor-pointer">🌻</span>
@@ -301,7 +301,7 @@ export default function Home() {
             <span className="hover:animate-bounce cursor-pointer">🐞</span>
             <span className="hover:animate-bounce cursor-pointer">🌼</span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">
             © 2026 starLog - 个人知识库 · Made with ❤️ by 老柱子
           </p>
         </div>
