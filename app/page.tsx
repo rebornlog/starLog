@@ -89,8 +89,8 @@ export default function Home() {
   ]
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
-      <div className="text-center max-w-5xl mx-auto w-full">
+    <div className="min-h-screen flex flex-col px-4 sm:px-6 py-8 sm:py-12">
+      <div className="text-center max-w-5xl mx-auto w-full flex-1">
         {/* 宫崎骏风格标题区域 */}
         <div className="mb-6 sm:mb-8 relative">
           {/* 装饰性云朵 - 移动端隐藏或缩小 */}
@@ -285,8 +285,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 底部装饰 - 移动端缩小 */}
-        <div className="mt-8 sm:mt-16 flex justify-center gap-2 sm:gap-4 text-3xl sm:text-4xl opacity-60">
+        {/* 底部装饰 - 固定在页面底部 */}
+        <div className="mt-auto pt-8 pb-4 flex justify-center gap-2 sm:gap-4 text-3xl sm:text-4xl opacity-60">
           <span className="hover:animate-bounce cursor-default">🍄</span>
           <span className="hover:animate-bounce cursor-default delay-100">🌻</span>
           <span className="hover:animate-bounce cursor-default delay-200">🦋</span>
@@ -294,6 +294,11 @@ export default function Home() {
           <span className="hover:animate-bounce cursor-default delay-400">🌼</span>
         </div>
       </div>
+      
+      {/* Footer */}
+      <footer className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p>© 2026 starLog. Made with ❤️ by 老柱子</p>
+      </footer>
     </div>
   )
 }
