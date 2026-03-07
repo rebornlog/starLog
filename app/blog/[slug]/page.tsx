@@ -36,7 +36,7 @@ interface RelatedPost {
 
 export default function BlogPostPage() {
   const params = useParams()
-  const slug = params.slug as string
+  const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug as string || ''
   
   const [post, setPost] = useState<Post | null>(null)
   const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([])
