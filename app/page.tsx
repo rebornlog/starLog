@@ -302,7 +302,7 @@ export default function Home() {
             <span className="hover:animate-bounce cursor-pointer">🌼</span>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-            © 2026 starLog · Made with ❤️ by 老柱子
+            © 2026 starLog - 个人知识库 · Made with ❤️ by 老柱子
           </p>
         </div>
       </footer>
