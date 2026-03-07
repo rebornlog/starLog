@@ -10,6 +10,7 @@ import SectionContainer from '@/components/SectionContainer'
 import Footer from '@/components/Footer'
 import siteMetadata from '@/data/siteMetadata'
 import ThemeWrapper from '@/components/theme/ThemeWrapper'
+import ThemeSwitcher from '@/components/theme/ThemeSwitcher'
 import { Metadata } from 'next'
 
 const space_grotesk = Space_Grotesk({
@@ -95,12 +96,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeWrapper>
           <SectionContainer>
             <div className="flex h-screen flex-col">
-              <Analytics analyticsConfig={siteMetadata.analytics as AnalyticsConfig} />
+              <Analytics analyticsConfig={siteMetadata.analytics} />
               <Header />
               <main className="mb-auto">{children}</main>
             </div>
           </SectionContainer>
           <Footer />
+          <ThemeSwitcher />
         </ThemeWrapper>
       </body>
     </html>
