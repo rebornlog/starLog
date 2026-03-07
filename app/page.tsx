@@ -1,7 +1,7 @@
-'use client'
-
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 interface Post {
   id: string
@@ -15,25 +15,36 @@ interface Post {
   viewCount: number
 }
 
-export default function Home() {
-  const [recentPosts, setRecentPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchRecentPosts()
-  }, [])
-
-  async function fetchRecentPosts() {
-    try {
-      const res = await fetch('/api/posts?page=1&limit=3')
-      const data = await res.json()
-      setRecentPosts(data.posts || [])
-    } catch (error) {
-      console.error('Failed to fetch recent posts:', error)
-    } finally {
-      setLoading(false)
-    }
+// 服务端获取最新文章
+async function getRecentPosts() {
+  try {
+    const posts = await prisma.post.findMany({
+      where: { isPublished: true },
+      orderBy: { publishedAt: 'desc' },
+      take: 3,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        category: true,
+        tags: true,
+        publishedAt: true,
+        readingTime: true,
+        viewCount: true,
+      },
+    })
+    return posts
+  } catch (error) {
+    console.error('Failed to fetch recent posts:', error)
+    return []
+  } finally {
+    await prisma.$disconnect()
   }
+}
+
+export default async function Home() {
+  const recentPosts = await getRecentPosts()
 
   // 功能卡片配置
   const featureCards = [
@@ -87,6 +98,14 @@ export default function Home() {
     { icon: '🧭', name: '风水', href: '/blog?category=fengshui' },
     { icon: '🔮', name: '商业', href: '/blog?category=business' },
   ]
+
+  function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
 
   return (
     <>
@@ -164,7 +183,7 @@ export default function Home() {
             ))}
           </div>
 
-          {/* 最新文章预览 - 移动端优化 */}
+          {/* 最新文章预览 - 服务端渲染 */}
           <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-amber-200 dark:border-amber-800 shadow-inner mb-12 sm:mb-16">
             <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -179,12 +198,7 @@ export default function Home() {
               </Link>
             </div>
             
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2 animate-pulse">📚</div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">加载中...</p>
-              </div>
-            ) : recentPosts.length === 0 ? (
+            {recentPosts.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-2">📭</div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">暂无文章</p>
@@ -205,7 +219,7 @@ export default function Home() {
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(post.publishedAt).toLocaleDateString('zh-CN')}
+                            {formatDate(post.publishedAt)}
                           </span>
                           <span className="text-xs text-gray-400 dark:text-gray-500">·</span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -222,7 +236,7 @@ export default function Home() {
               </div>
             )}
             
-            {!loading && recentPosts.length > 0 && (
+            {recentPosts.length > 0 && (
               <p className="mt-4 sm:mt-6 text-amber-600 dark:text-amber-400 text-center text-xs sm:text-sm">
                 ✨ 每日更新，敬请期待更多优质内容
               </p>
