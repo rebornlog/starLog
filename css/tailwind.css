@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* 自定义断点 - 补充 xs (480px) 用于小屏手机 */
+@theme {
+  --breakpoint-xs: 480px;
+}
+
 /* 龙猫主题色系 - Tailwind CSS 4.x 配置 */
 @theme {
   --color-totoro-50: #F0F7F4;
