@@ -9,6 +9,72 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// 博客文章
+model Post {
+  id          String   @id @default(cuid())
+  slug        String   @unique  // URL 路径，如：qps-optimization-guide
+  title       String
+  summary     String?  @db.Text
+  content     String   @db.Text  // Markdown 全文
+  excerpt     String?  @db.Text  // 摘要，用于列表页
+  coverImage  String?  // 封面图 URL
+  
+  // 分类和标签
+  category    String   @default("tech")  // tech, finance, fengshui, business
+  tags        String[]
+  
+  // 发布状态
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  
+  // 统计数据
+  viewCount   Int      @default(0)
+  likeCount   Int      @default(0)
+  commentCount Int     @default(0)
+  
+  // 阅读时间（分钟）
+  readingTime Int      @default(5)
+  
+  // SEO
+  metaTitle   String?
+  metaDesc    String?
+  keywords    String[]
+  
+  // 作者
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 索引 - 支持高效查询和全文检索
+  @@index([category])
+  @@index([tags])
+  @@index([isPublished, publishedAt])
+  @@index([authorId])
+  @@index([slug])
+}
+
+/// 用户（作者）
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  avatar    String?
+  bio       String?  @db.Text
+  website   String?
+  
+  // 关联文章
+  posts     Post[]
+  
+  // 时间戳
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+}
+
 /// 知识库文档
 model Document {
   id          String   @id @default(cuid())

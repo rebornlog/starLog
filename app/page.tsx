@@ -1,14 +1,39 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+
+interface Post {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  category: string
+  tags: string[]
+  publishedAt: string
+  readingTime: number
+  viewCount: number
+}
 
 export default function Home() {
-  // 最新文章（placeholder，后续每日更新）
-  const recentPosts = [
-    { title: 'Spring Boot 3.0 新特性深度解析', date: '2026-03-07', category: '技术' },
-    { title: 'Redis 缓存穿透、击穿、雪崩解决方案', date: '2026-03-06', category: '技术' },
-    { title: 'Kafka 消息队列在高并发场景下的应用', date: '2026-03-05', category: '技术' },
-  ]
+  const [recentPosts, setRecentPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchRecentPosts()
+  }, [])
+
+  async function fetchRecentPosts() {
+    try {
+      const res = await fetch('/api/posts?page=1&limit=3')
+      const data = await res.json()
+      setRecentPosts(data.posts || [])
+    } catch (error) {
+      console.error('Failed to fetch recent posts:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // 功能卡片配置
   const featureCards = [
@@ -137,35 +162,67 @@ export default function Home() {
 
         {/* 最新文章预览 - 移动端优化 */}
         <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-amber-200 dark:border-amber-800 shadow-inner mb-12 sm:mb-16">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <span className="text-2xl sm:text-3xl">📝</span>
-            <h2 className="text-xl sm:text-2xl font-bold text-amber-800 dark:text-amber-200">最新文章</h2>
+          <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl">📝</span>
+              <h2 className="text-xl sm:text-2xl font-bold text-amber-800 dark:text-amber-200">最新文章</h2>
+            </div>
+            <Link
+              href="/blog"
+              className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
+            >
+              查看更多 →
+            </Link>
           </div>
-          <div className="space-y-3 sm:space-y-4">
-            {recentPosts.map((post, index) => (
-              <Link
-                key={index}
-                href={`/blog/${index}`}
-                className="group flex items-center justify-between p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform duration-300 flex-shrink-0">📄</span>
-                  <div className="min-w-0 flex-1">
-                    <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mb-1">
-                      {post.category}
-                    </span>
-                    <p className="font-medium text-sm sm:text-base text-gray-800 dark:text-gray-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300 truncate">
-                      {post.title}
-                    </p>
+          
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2 animate-pulse">📚</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">加载中...</p>
+            </div>
+          ) : recentPosts.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">📭</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">暂无文章</p>
+            </div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {recentPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/blog/${post.slug}`}
+                  className="group flex items-center justify-between p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform duration-300 flex-shrink-0">📄</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm sm:text-base text-gray-800 dark:text-gray-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300 truncate">
+                        {post.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(post.publishedAt).toLocaleDateString('zh-CN')}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">·</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {post.readingTime} 分钟阅读
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">{post.date}</span>
-              </Link>
-            ))}
-          </div>
-          <p className="mt-4 sm:mt-6 text-amber-600 dark:text-amber-400 text-center text-xs sm:text-sm">
-            ✨ 每日更新，敬请期待更多优质内容
-          </p>
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
+                    👁️ {post.viewCount}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+          
+          {!loading && recentPosts.length > 0 && (
+            <p className="mt-4 sm:mt-6 text-amber-600 dark:text-amber-400 text-center text-xs sm:text-sm">
+              ✨ 每日更新，敬请期待更多优质内容
+            </p>
+          )}
         </div>
 
         {/* 关于我 - 移动端优化 */}
