@@ -39,7 +39,7 @@ export default function Home() {
         </p>
 
         {/* 主要功能入口 - 卡片式设计 */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
+        <div className="grid md:grid-cols-2 gap-6 mb-16">
           {/* 博客卡片 */}
           <Link 
             href="/blog" 
@@ -77,53 +77,6 @@ export default function Home() {
               查看行情 →
             </div>
           </a>
-
-          {/* 主题切换卡片 */}
-          <div className="group bg-gradient-to-br from-pink-50 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-pink-200 dark:border-pink-800">
-            <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">🎨</div>
-            <h3 className="text-2xl font-bold mb-3 text-pink-800 dark:text-pink-200">
-              主题花园
-            </h3>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              10 套精美主题随心切换<br/>
-              点击右下角按钮探索
-            </p>
-            <div className="mt-4 text-pink-600 dark:text-pink-400 font-medium">
-              🌿 试试点击右下角
-            </div>
-          </div>
-        </div>
-
-        {/* 主题展示区域 */}
-        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 rounded-3xl p-8 border border-green-200 dark:border-green-800 shadow-inner">
-          <h2 className="text-2xl font-bold mb-6 text-green-800 dark:text-green-200">
-            🎨 已上线主题
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { icon: '🌿', name: '龙猫森林' },
-              { icon: '🌙', name: '午夜蓝调' },
-              { icon: '🌅', name: '落日余晖' },
-              { icon: '❄️', name: '极地冰川' },
-              { icon: '🌸', name: '樱花飞舞' },
-              { icon: '💎', name: '翡翠绿洲' },
-              { icon: '⚫', name: '极简黑白' },
-              { icon: '🌊', name: '深海秘境' },
-              { icon: '🍯', name: '琥珀流光' },
-              { icon: '🤖', name: '赛博朋克' },
-            ].map((theme) => (
-              <div 
-                key={theme.name}
-                className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="text-3xl mb-2">{theme.icon}</div>
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{theme.name}</div>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-gray-600 dark:text-gray-400 text-center">
-            ✨ 点击右下角的 <span className="text-2xl align-middle animate-bounce inline-block">🌿</span> 按钮，开启你的主题之旅
-          </p>
         </div>
 
         {/* 底部装饰 */}
