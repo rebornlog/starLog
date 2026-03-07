@@ -1,97 +1,113 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { PrismaClient } from '@prisma/client'
 
-interface Post {
-  id: string
-  slug: string
-  title: string
-  summary: string
-  content: string
-  category: string
-  tags: string[]
-  publishedAt: string
-  readingTime: number
-  viewCount: number
-  likeCount: number
-  metaDesc: string
-  author: {
-    id: string
-    name: string
-    avatar: string | null
-    bio: string | null
-  }
+const prisma = new PrismaClient()
+
+interface PageProps {
+  params: Promise<{ slug: string }>
 }
 
-interface RelatedPost {
-  id: string
-  slug: string
-  title: string
-  summary: string
-  publishedAt: string
-  readingTime: number
-}
-
-export default function BlogPostPage() {
-  const params = useParams()
-  const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug as string || ''
-  
-  const [post, setPost] = useState<Post | null>(null)
-  const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (slug) {
-      fetchPost()
-    }
-  }, [slug])
-
-  async function fetchPost() {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/posts/${slug}`)
-      const data = await res.json()
-      
-      if (data.post) {
-        setPost(data.post)
-        setRelatedPosts(data.relatedPosts || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch post:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+// 服务端获取文章详情
+async function getPost(slug: string) {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+            bio: true,
+          },
+        },
+      },
     })
+
+    if (!post || !post.isPublished) {
+      return null
+    }
+
+    // 增加阅读数（异步，不阻塞渲染）
+    prisma.post.update({
+      where: { id: post.id },
+      data: { viewCount: { increment: 1 } },
+    }).catch(console.error)
+
+    // 获取相关文章（同分类）
+    const relatedPosts = await prisma.post.findMany({
+      where: {
+        AND: [
+          { id: { not: post.id } },
+          { category: post.category },
+          { isPublished: true },
+        ],
+      },
+      take: 3,
+      orderBy: { publishedAt: 'desc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        publishedAt: true,
+        readingTime: true,
+      },
+    })
+
+    return { post, relatedPosts }
+  } catch (error) {
+    console.error('Error fetching post:', error)
+    return null
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// 生成页面元数据
+export async function generateMetadata({ params }: PageProps) {
+  const { slug } = await params
+  const data = await getPost(slug)
+  
+  if (!data) {
+    return {
+      title: '文章未找到',
+    }
   }
 
-  const categories: Record<string, { name: string; icon: string }> = {
-    tech: { name: '技术', icon: '💻' },
-    finance: { name: '金融', icon: '📈' },
-    fengshui: { name: '风水', icon: '🧭' },
-    business: { name: '商业', icon: '🔮' },
+  const { post } = data
+  
+  return {
+    title: post.metaTitle || post.title,
+    description: post.metaDesc || post.summary,
+    keywords: post.keywords.join(', '),
   }
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-pulse">📚</div>
-          <p className="text-gray-500 dark:text-gray-400">加载中...</p>
-        </div>
-      </div>
-    )
-  }
+// 格式化日期
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
 
-  if (!post) {
+// 分类映射
+const categories: Record<string, { name: string; icon: string }> = {
+  tech: { name: '技术', icon: '💻' },
+  finance: { name: '金融', icon: '📈' },
+  fengshui: { name: '风水', icon: '🧭' },
+  business: { name: '商业', icon: '🔮' },
+}
+
+// 服务端渲染文章详情页
+export default async function BlogPostPage({ params }: PageProps) {
+  const { slug } = await params
+  const data = await getPost(slug)
+
+  if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -105,6 +121,7 @@ export default function BlogPostPage() {
     )
   }
 
+  const { post, relatedPosts } = data
   const category = categories[post.category] || { name: post.category, icon: '📄' }
 
   return (
@@ -120,7 +137,7 @@ export default function BlogPostPage() {
       {/* 文章头部 */}
       <article className="bg-white dark:bg-gray-800 rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 dark:border-gray-700">
         {/* 分类和元信息 */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
           <span className="px-4 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full font-medium">
             {category.icon} {category.name}
           </span>
@@ -128,7 +145,7 @@ export default function BlogPostPage() {
             {formatDate(post.publishedAt)}
           </span>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            · {post.readingTime} 分钟阅读
+            · ⏱️ {post.readingTime} 分钟阅读
           </span>
           <span className="text-sm text-gray-500 dark:text-gray-400">
             · 👁️ {post.viewCount}
@@ -172,7 +189,7 @@ export default function BlogPostPage() {
           </div>
         </div>
 
-        {/* 文章内容 */}
+        {/* 文章内容 - Markdown 渲染 */}
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <div className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap font-sans">
             {post.content}
@@ -216,7 +233,7 @@ export default function BlogPostPage() {
                   {related.summary}
                 </p>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {related.readingTime} 分钟阅读
+                  ⏱️ {related.readingTime} 分钟阅读
                 </div>
               </Link>
             ))}
