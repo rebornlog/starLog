@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { PrismaClient } from '@prisma/client'
+import { getCachedRecentPosts, setCachedRecentPosts } from '@/lib/redis'
 
 const prisma = new PrismaClient()
 
@@ -15,9 +16,18 @@ interface Post {
   viewCount: number
 }
 
-// 服务端获取最新文章
+// 服务端获取最新文章（带 Redis 缓存）
 async function getRecentPosts() {
   try {
+    // 1. 先查 Redis 缓存
+    const cached = await getCachedRecentPosts(3)
+    if (cached) {
+      console.log('✅ 首页文章：Redis 缓存命中')
+      return cached
+    }
+
+    // 2. 缓存未命中，查数据库
+    console.log('⏳ 首页文章：查询数据库...')
     const posts = await prisma.post.findMany({
       where: { isPublished: true },
       orderBy: { publishedAt: 'desc' },
@@ -34,6 +44,13 @@ async function getRecentPosts() {
         viewCount: true,
       },
     })
+
+    // 3. 写入 Redis 缓存（5 分钟）
+    if (posts.length > 0) {
+      await setCachedRecentPosts(posts, 3)
+      console.log('✅ 首页文章：已缓存到 Redis')
+    }
+
     return posts
   } catch (error) {
     console.error('Failed to fetch recent posts:', error)
@@ -70,24 +87,34 @@ export default async function Home() {
       external: true,
     },
     {
-      icon: '🧭',
-      title: '风水学',
-      description: '探索传统智慧与现代应用\n环境能量与生活哲学',
+      icon: '✨',
+      title: '星座运势',
+      description: '十二星座每日运势查询\n爱情·事业·财运·幸运色',
       color: 'from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30',
       borderColor: 'border-purple-200 dark:border-purple-800',
       textColor: 'text-purple-800 dark:text-purple-200',
       linkColor: 'text-purple-600 dark:text-purple-400',
-      href: '/blog',
+      href: '/zodiac',
     },
     {
-      icon: '🔮',
-      title: '商业未来',
-      description: '洞察行业趋势与投资机会\n把握时代脉搏与风向',
-      color: 'from-slate-50 to-gray-100 dark:from-slate-900/30 dark:to-gray-900/30',
-      borderColor: 'border-slate-200 dark:border-slate-800',
-      textColor: 'text-slate-800 dark:text-slate-200',
-      linkColor: 'text-slate-600 dark:text-slate-400',
-      href: '/blog',
+      icon: '☯',
+      title: '易经问卦',
+      description: '六十四卦智慧启示\n随机·时间·数字三种起卦方式',
+      color: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
+      borderColor: 'border-amber-200 dark:border-amber-800',
+      textColor: 'text-amber-800 dark:text-amber-200',
+      linkColor: 'text-amber-600 dark:text-amber-400',
+      href: '/iching',
+    },
+    {
+      icon: '🥗',
+      title: '能量饮食',
+      description: '生辰八字分析五行\n定制专属能量饮食方案',
+      color: 'from-green-50 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30',
+      borderColor: 'border-green-200 dark:border-green-800',
+      textColor: 'text-green-800 dark:text-green-200',
+      linkColor: 'text-green-600 dark:text-green-400',
+      href: '/diet',
     },
   ]
 
@@ -95,8 +122,9 @@ export default async function Home() {
   const topics = [
     { icon: '📚', name: '技术', href: '/blog?category=tech' },
     { icon: '📈', name: '金融', href: '/blog?category=finance' },
-    { icon: '🧭', name: '风水', href: '/blog?category=fengshui' },
-    { icon: '🔮', name: '商业', href: '/blog?category=business' },
+    { icon: '✨', name: '星座', href: '/zodiac' },
+    { icon: '☯', name: '问卦', href: '/iching' },
+    { icon: '🥗', name: '饮食', href: '/diet' },
   ]
 
   function formatDate(dateString: string) {

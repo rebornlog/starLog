@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { PrismaClient } from '@prisma/client'
+import { getCachedArticle, setCachedArticle, invalidateArticleCache } from '@/lib/redis'
 
 const prisma = new PrismaClient()
 
@@ -8,9 +9,25 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
-// 服务端获取文章详情
+// 服务端获取文章详情（带 Redis 缓存）
 async function getPost(slug: string) {
   try {
+    // 1. 先查 Redis 缓存
+    const cached = await getCachedArticle(slug)
+    if (cached) {
+      console.log(`✅ 文章 "${slug}": Redis 缓存命中`)
+      
+      // 异步增加阅读数
+      prisma.post.update({
+        where: { id: cached.post.id },
+        data: { viewCount: { increment: 1 } },
+      }).catch(console.error)
+      
+      return cached
+    }
+
+    // 2. 缓存未命中，查数据库
+    console.log(`⏳ 文章 "${slug}": 查询数据库...`)
     const post = await prisma.post.findUnique({
       where: { slug },
       include: {
@@ -56,7 +73,13 @@ async function getPost(slug: string) {
       },
     })
 
-    return { post, relatedPosts }
+    const data = { post, relatedPosts }
+
+    // 3. 写入 Redis 缓存（5 分钟）
+    await setCachedArticle(slug, data)
+    console.log(`✅ 文章 "${slug}": 已缓存到 Redis`)
+
+    return data
   } catch (error) {
     console.error('Error fetching post:', error)
     return null
