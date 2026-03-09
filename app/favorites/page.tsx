@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getFavorites, removeFavorite, formatTime, FavoriteItem } from '@/lib/storage';
+import { useToast } from '@/components/Toast';
 
 export default function FavoritesPage() {
+  const { showToast } = useToast();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'iching' | 'zodiac' | 'diet'>('all');
   const [showExport, setShowExport] = useState(false);
@@ -18,21 +20,27 @@ export default function FavoritesPage() {
   const handleRemove = (type: string, id: string) => {
     if (removeFavorite(type, id)) {
       setFavorites(favorites.filter(f => !(f.type === type && f.id === id)));
+      showToast('已取消收藏', 'info');
     }
   };
 
   // 导出收藏为 JSON
   const handleExport = () => {
-    const dataStr = JSON.stringify(favorites, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `starlog-favorites-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setExportSuccess(true);
-    setTimeout(() => setExportSuccess(false), 3000);
+    try {
+      const dataStr = JSON.stringify(favorites, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `starlog-favorites-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setExportSuccess(true);
+      showToast(`导出成功！已下载 ${favorites.length} 条收藏`, 'success');
+      setTimeout(() => setExportSuccess(false), 3000);
+    } catch (error) {
+      showToast('导出失败，请重试', 'error');
+    }
   };
 
   // 导入收藏
@@ -54,13 +62,13 @@ export default function FavoritesPage() {
           if (newFavorites.length > 0) {
             localStorage.setItem('starlog_favorites', JSON.stringify([...newFavorites, ...favorites]));
             setFavorites([...newFavorites, ...favorites]);
-            alert(`成功导入 ${newFavorites.length} 条收藏！`);
+            showToast(`成功导入 ${newFavorites.length} 条收藏！`, 'success');
           } else {
-            alert('没有新的收藏需要导入');
+            showToast('没有新的收藏需要导入', 'info');
           }
         }
       } catch (error) {
-        alert('导入失败：文件格式不正确');
+        showToast('导入失败：文件格式不正确', 'error');
       }
     };
     reader.readAsText(file);
@@ -72,6 +80,7 @@ export default function FavoritesPage() {
     if (confirm('确定要清空所有收藏吗？此操作不可恢复！')) {
       localStorage.removeItem('starlog_favorites');
       setFavorites([]);
+      showToast('已清空所有收藏', 'info');
     }
   };
 
