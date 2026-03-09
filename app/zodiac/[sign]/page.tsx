@@ -6,6 +6,7 @@ import { use } from 'react';
 import { ZODIAC_SIGNS, getZodiacSign } from '@/lib/zodiac/data';
 import { generateDailyFortune } from '@/lib/zodiac/fortune';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
+import { useToast } from '@/components/Toast';
 
 interface PageProps {
   params: Promise<{
@@ -48,6 +49,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const { sign: signId } = resolvedParams;
   const sign = ZODIAC_SIGNS.find(s => s.id === signId);
+  const { showToast } = useToast();
   
   const [fortune, setFortune] = useState<any>(null);
   const [favorited, setFavorited] = useState(false);
@@ -88,6 +90,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
     if (favorited) {
       removeFavorite('zodiac', fortuneId);
       setFavorited(false);
+      showToast('已取消收藏', 'info');
     } else {
       addFavorite({
         type: 'zodiac',
@@ -102,6 +105,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
         data: { sign, fortune },
       });
       setFavorited(true);
+      showToast('收藏成功！⭐', 'success');
     }
   };
 

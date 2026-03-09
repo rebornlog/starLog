@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { castHexagram, interpretHexagram } from '@/lib/iching/divination';
 import { HEXAGRAMS } from '@/lib/iching/data';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
+import { useToast } from '@/components/Toast';
 
 type Method = 'random' | 'time' | 'number';
 
 export default function IChingPage() {
+  const { showToast } = useToast();
   const [method, setMethod] = useState<Method | null>(null);
   const [numbers, setNumbers] = useState<[number, number, number] | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -169,6 +171,7 @@ export default function IChingPage() {
                     if (isFav) {
                       removeFavorite('iching', id);
                       setFavorited(false);
+                      showToast('已取消收藏', 'info');
                     } else {
                       addFavorite({
                         type: 'iching',
@@ -183,6 +186,7 @@ export default function IChingPage() {
                         data: { hexagram: result.hexagram },
                       });
                       setFavorited(true);
+                      showToast('收藏成功！⭐', 'success');
                     }
                   }}
                   className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all ${

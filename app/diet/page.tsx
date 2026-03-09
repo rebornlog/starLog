@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { calculateBazi, getElementColor } from '@/lib/bazi/calculator'
 import { generateDietAdvice, FOOD_DATABASE } from '@/lib/bazi/food-database'
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
+import { useToast } from '@/components/Toast'
 
 export default function DietPage() {
+  const { showToast } = useToast()
   const [formData, setFormData] = useState({
     year: '',
     month: '',
@@ -24,6 +26,31 @@ export default function DietPage() {
       setFavorited(isFavorited('diet', id));
     }
   }, [result, formData]);
+
+  // 收藏切换函数
+  const handleToggleFavorite = () => {
+    const id = `diet-${result.bazi.year}-${result.bazi.month}-${result.bazi.day}-${result.bazi.hour}`;
+    if (favorited) {
+      removeFavorite('diet', id);
+      setFavorited(false);
+      showToast('已取消收藏', 'info');
+    } else {
+      addFavorite({
+        type: 'diet',
+        id,
+        title: `能量饮食方案 - ${result.birthInfo}`,
+        data: { bazi: result.bazi, advice: result.advice, birthInfo: result.birthInfo },
+      });
+      addHistory({
+        type: 'diet',
+        id: `${id}-${Date.now()}`,
+        title: `能量饮食方案 - ${result.birthInfo}`,
+        data: { bazi: result.bazi, advice: result.advice },
+      });
+      setFavorited(true);
+      showToast('收藏成功！⭐', 'success');
+    }
+  };
 
   // 提交表单
   const handleSubmit = (e: React.FormEvent) => {
@@ -243,27 +270,7 @@ export default function DietPage() {
             result={result} 
             onReset={handleReset} 
             favorited={favorited}
-            onToggleFavorite={() => {
-              const id = `diet-${result.bazi.year}-${result.bazi.month}-${result.bazi.day}-${result.bazi.hour}`;
-              if (favorited) {
-                removeFavorite('diet', id);
-                setFavorited(false);
-              } else {
-                addFavorite({
-                  type: 'diet',
-                  id,
-                  title: `能量饮食方案 - ${result.birthInfo}`,
-                  data: { bazi: result.bazi, advice: result.advice, birthInfo: result.birthInfo },
-                });
-                addHistory({
-                  type: 'diet',
-                  id: `${id}-${Date.now()}`,
-                  title: `能量饮食方案 - ${result.birthInfo}`,
-                  data: { bazi: result.bazi, advice: result.advice },
-                });
-                setFavorited(true);
-              }
-            }}
+            onToggleFavorite={handleToggleFavorite}
           />
         )}
 
