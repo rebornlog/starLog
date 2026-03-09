@@ -191,18 +191,18 @@ export default async function Home() {
           </div>
 
           {/* 功能卡片 - 移动端单列，桌面端双列 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-12 sm:mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16">
             {featureCards.map((card) => (
               <Link
                 key={card.title}
                 href={card.href}
                 target={card.external ? '_blank' : undefined}
                 rel={card.external ? 'noopener noreferrer' : undefined}
-                className={`group bg-gradient-to-br ${card.color} p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border ${card.borderColor}`}
+                className={`group bg-gradient-to-br ${card.color} p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border ${card.borderColor} min-h-[280px] sm:min-h-[300px] flex flex-col`}
               >
                 <div className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">{card.icon}</div>
                 <h3 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 ${card.textColor}`}>{card.title}</h3>
-                <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line flex-1">
                   {card.description}
                 </p>
                 <div className={`mt-3 sm:mt-4 text-sm sm:text-base font-medium group-hover:translate-x-2 transition-transform duration-300 ${card.linkColor}`}>
