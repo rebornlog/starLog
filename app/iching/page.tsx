@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { castHexagram, interpretHexagram } from '@/lib/iching/divination';
 import { HEXAGRAMS } from '@/lib/iching/data';
+import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 
 type Method = 'random' | 'time' | 'number';
 
@@ -11,6 +13,15 @@ export default function IChingPage() {
   const [numbers, setNumbers] = useState<[number, number, number] | null>(null);
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+
+  // 检查收藏状态
+  useEffect(() => {
+    if (result?.hexagram) {
+      const id = `hexagram-${result.hexagram.id}`;
+      setFavorited(isFavorited('iching', id));
+    }
+  }, [result]);
 
   // 起卦
   const handleDivination = () => {
@@ -144,7 +155,48 @@ export default function IChingPage() {
           </>
         ) : (
           /* 卦象结果 */
-          <HexagramResult result={result} onReset={handleReset} />
+          <>
+            <HexagramResult result={result} onReset={handleReset} />
+            
+            {/* 收藏按钮 */}
+            {result?.hexagram && (
+              <div className="flex justify-center mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = `hexagram-${result.hexagram.id}`;
+                    const isFav = isFavorited('iching', id);
+                    if (isFav) {
+                      removeFavorite('iching', id);
+                      setFavorited(false);
+                    } else {
+                      addFavorite({
+                        type: 'iching',
+                        id,
+                        title: `第${result.hexagram.number}卦 - ${result.hexagram.name}`,
+                        data: { hexagram: result.hexagram, interpretation: result.interpretation },
+                      });
+                      addHistory({
+                        type: 'iching',
+                        id: `${id}-${Date.now()}`,
+                        title: `第${result.hexagram.number}卦 - ${result.hexagram.name}`,
+                        data: { hexagram: result.hexagram },
+                      });
+                      setFavorited(true);
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all ${
+                    favorited
+                      ? 'bg-pink-500 text-white hover:bg-pink-600'
+                      : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-2 border-pink-300 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span className="text-xl">{favorited ? '⭐' : '☆'}</span>
+                  <span>{favorited ? '已收藏' : '收藏此卦'}</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* 底部说明 */}
@@ -309,6 +361,12 @@ function HexagramResult({ result, onReset }: { result: any; onReset: () => void 
         >
           能量饮食
         </a>
+        <Link
+          href="/favorites"
+          className="bg-white dark:bg-slate-800 text-pink-700 dark:text-pink-300 px-6 py-3 rounded-full font-medium border-2 border-pink-300 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-slate-700 transition-all"
+        >
+          ⭐ 我的收藏
+        </Link>
       </div>
     </div>
   );

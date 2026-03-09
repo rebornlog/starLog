@@ -1,36 +1,16 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { use } from 'react';
 import { ZODIAC_SIGNS, getZodiacSign } from '@/lib/zodiac/data';
 import { generateDailyFortune } from '@/lib/zodiac/fortune';
+import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 
 interface PageProps {
   params: Promise<{
     sign: string;
   }>;
-}
-
-// 生成静态参数
-export async function generateStaticParams() {
-  return ZODIAC_SIGNS.map((sign) => ({
-    sign: sign.id,
-  }));
-}
-
-// 生成页面元数据
-export async function generateMetadata({ params }: PageProps) {
-  const { sign } = await params;
-  const signData = ZODIAC_SIGNS.find(s => s.id === sign);
-  
-  if (!signData) {
-    return {
-      title: '星座未找到 - starLog',
-    };
-  }
-
-  return {
-    title: `${signData.name}今日运势 - starLog`,
-    description: `${signData.name}（${signData.dateRange}）今日运势详解`,
-  };
 }
 
 // 运势等级
@@ -64,16 +44,36 @@ function FortuneBar({ label, score, color }: { label: string; score: number; col
   );
 }
 
-export default async function ZodiacSignPage({ params }: PageProps) {
-  const { sign: signId } = await params;
+export default function ZodiacSignPage({ params }: PageProps) {
+  const resolvedParams = use(params);
+  const { sign: signId } = resolvedParams;
   const sign = ZODIAC_SIGNS.find(s => s.id === signId);
   
-  if (!sign) {
-    notFound();
+  const [fortune, setFortune] = useState<any>(null);
+  const [favorited, setFavorited] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!sign) return;
+
+    // 生成今日运势
+    const fortuneData = generateDailyFortune(sign, new Date());
+    setFortune(fortuneData);
+    
+    // 检查收藏状态
+    const id = `zodiac-${sign.id}-${new Date().toDateString()}`;
+    setFavorited(isFavorited('zodiac', id));
+    setLoading(false);
+  }, [sign]);
+
+  if (!sign || loading || !fortune) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-indigo-900 via-purple-900 to-slate-900 py-12 px-4 flex items-center justify-center">
+        <div className="text-white text-2xl">加载中...</div>
+      </div>
+    );
   }
 
-  // 生成今日运势
-  const fortune = generateDailyFortune(sign, new Date());
   const today = new Date();
   const dateStr = today.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -82,9 +82,48 @@ export default async function ZodiacSignPage({ params }: PageProps) {
     weekday: 'long',
   });
 
+  const fortuneId = `zodiac-${sign.id}-${today.toDateString()}`;
+
+  const handleToggleFavorite = () => {
+    if (favorited) {
+      removeFavorite('zodiac', fortuneId);
+      setFavorited(false);
+    } else {
+      addFavorite({
+        type: 'zodiac',
+        id: fortuneId,
+        title: `${sign.name} - ${dateStr}`,
+        data: { sign, fortune, date: dateStr },
+      });
+      addHistory({
+        type: 'zodiac',
+        id: `${fortuneId}-${Date.now()}`,
+        title: `${sign.name} - ${dateStr}`,
+        data: { sign, fortune },
+      });
+      setFavorited(true);
+    }
+  };
+
   return (
     <div className={`min-h-screen bg-gradient-to-b ${sign.gradient} py-12 px-4`}>
-      <div className="max-w-4xl mx-auto">
+      {/* 星空背景装饰 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(50)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              opacity: Math.random() * 0.7 + 0.3,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* 返回按钮 */}
         <div className="mb-6">
           <Link
@@ -97,21 +136,37 @@ export default async function ZodiacSignPage({ params }: PageProps) {
 
         {/* 星座头部 */}
         <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 mb-8">
-          <div className="flex items-center gap-6 mb-6">
-            <div className="text-7xl">{sign.icon}</div>
-            <div>
-              <h1 className="text-4xl font-bold text-white mb-2">
-                {sign.name}
-              </h1>
-              <p className="text-white/80 text-lg">{sign.englishName}</p>
-              <div className="flex items-center gap-3 mt-2">
-                <span className="text-white/70">{sign.dateRange}</span>
-                <span className="text-white/50">•</span>
-                <span className="bg-white/20 px-3 py-1 rounded-full text-white text-sm">
-                  {sign.element}象星座
-                </span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-6">
+              <div className="text-7xl">{sign.icon}</div>
+              <div>
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  {sign.name}
+                </h1>
+                <p className="text-white/80 text-lg">{sign.englishName}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-white/70">{sign.dateRange}</span>
+                  <span className="text-white/50">•</span>
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-white text-sm">
+                    {sign.element}象星座
+                  </span>
+                </div>
               </div>
             </div>
+            
+            {/* 收藏按钮 */}
+            <button
+              type="button"
+              onClick={handleToggleFavorite}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all ${
+                favorited
+                  ? 'bg-pink-500 text-white hover:bg-pink-600'
+                  : 'bg-white/20 text-white border-2 border-white/50 hover:bg-white/30'
+              }`}
+            >
+              <span className="text-xl">{favorited ? '⭐' : '☆'}</span>
+              <span className="text-sm">{favorited ? '已收藏' : '收藏'}</span>
+            </button>
           </div>
           
           <div className="text-white/90 text-center py-4 border-t border-white/20">
@@ -204,7 +259,7 @@ export default async function ZodiacSignPage({ params }: PageProps) {
                   <span className="text-white font-medium">宜</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {fortune.good.map((item) => (
+                  {fortune.good.map((item: string) => (
                     <span
                       key={item}
                       className="bg-green-500/30 text-green-200 px-3 py-1 rounded-full text-sm"
@@ -220,7 +275,7 @@ export default async function ZodiacSignPage({ params }: PageProps) {
                   <span className="text-white font-medium">忌</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {fortune.bad.map((item) => (
+                  {fortune.bad.map((item: string) => (
                     <span
                       key={item}
                       className="bg-red-500/30 text-red-200 px-3 py-1 rounded-full text-sm"
@@ -244,12 +299,30 @@ export default async function ZodiacSignPage({ params }: PageProps) {
         </div>
 
         {/* 导航 */}
-        <div className="mt-8 text-center">
+        <div className="mt-8 flex flex-wrap gap-6 justify-center">
           <Link
             href="/"
             className="inline-flex items-center text-white/80 hover:text-white transition-colors"
           >
             ← 返回首页
+          </Link>
+          <Link
+            href="/iching"
+            className="inline-flex items-center text-amber-300 hover:text-amber-100 transition-colors"
+          >
+            ☯ 易经问卦
+          </Link>
+          <Link
+            href="/diet"
+            className="inline-flex items-center text-green-300 hover:text-green-100 transition-colors"
+          >
+            🥗 能量饮食
+          </Link>
+          <Link
+            href="/favorites"
+            className="inline-flex items-center text-pink-300 hover:text-pink-100 transition-colors"
+          >
+            ⭐ 我的收藏
           </Link>
         </div>
       </div>

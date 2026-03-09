@@ -125,6 +125,7 @@ export default async function Home() {
     { icon: '✨', name: '星座', href: '/zodiac' },
     { icon: '☯', name: '问卦', href: '/iching' },
     { icon: '🥗', name: '饮食', href: '/diet' },
+    { icon: '⭐', name: '收藏', href: '/favorites' },
   ]
 
   function formatDate(dateString: string) {

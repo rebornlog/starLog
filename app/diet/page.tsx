@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { calculateBazi, getElementColor } from '@/lib/bazi/calculator'
 import { generateDietAdvice, FOOD_DATABASE } from '@/lib/bazi/food-database'
+import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
 
 export default function DietPage() {
   const [formData, setFormData] = useState({
@@ -14,6 +15,15 @@ export default function DietPage() {
   })
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [favorited, setFavorited] = useState(false)
+
+  // 检查收藏状态
+  useEffect(() => {
+    if (result?.bazi) {
+      const id = `diet-${formData.year}-${formData.month}-${formData.day}-${formData.hour}`;
+      setFavorited(isFavorited('diet', id));
+    }
+  }, [result, formData]);
 
   // 提交表单
   const handleSubmit = (e: React.FormEvent) => {
@@ -229,7 +239,32 @@ export default function DietPage() {
           </div>
         ) : (
           /* 结果展示 */
-          <DietResult result={result} onReset={handleReset} />
+          <DietResult 
+            result={result} 
+            onReset={handleReset} 
+            favorited={favorited}
+            onToggleFavorite={() => {
+              const id = `diet-${result.bazi.year}-${result.bazi.month}-${result.bazi.day}-${result.bazi.hour}`;
+              if (favorited) {
+                removeFavorite('diet', id);
+                setFavorited(false);
+              } else {
+                addFavorite({
+                  type: 'diet',
+                  id,
+                  title: `能量饮食方案 - ${result.birthInfo}`,
+                  data: { bazi: result.bazi, advice: result.advice, birthInfo: result.birthInfo },
+                });
+                addHistory({
+                  type: 'diet',
+                  id: `${id}-${Date.now()}`,
+                  title: `能量饮食方案 - ${result.birthInfo}`,
+                  data: { bazi: result.bazi, advice: result.advice },
+                });
+                setFavorited(true);
+              }
+            }}
+          />
         )}
 
         {/* 底部说明 */}
@@ -275,7 +310,12 @@ export default function DietPage() {
 }
 
 // 结果展示组件
-function DietResult({ result, onReset }: { result: any; onReset: () => void }) {
+function DietResult({ result, onReset, favorited, onToggleFavorite }: { 
+  result: any; 
+  onReset: () => void;
+  favorited: boolean;
+  onToggleFavorite: () => void;
+}) {
   const { bazi, advice, birthInfo } = result
 
   return (
@@ -435,8 +475,24 @@ function DietResult({ result, onReset }: { result: any; onReset: () => void }) {
         </div>
       </div>
 
+      {/* 收藏按钮 */}
+      <div className="flex justify-center mb-6">
+        <button
+          type="button"
+          onClick={onToggleFavorite}
+          className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all ${
+            favorited
+              ? 'bg-pink-500 text-white hover:bg-pink-600'
+              : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-2 border-pink-300 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          <span className="text-xl">{favorited ? '⭐' : '☆'}</span>
+          <span>{favorited ? '已收藏' : '收藏此方案'}</span>
+        </button>
+      </div>
+
       {/* 操作按钮 */}
-      <div className="flex justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
         <button
           onClick={onReset}
           className="rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-8 py-3 font-bold text-white transition-all hover:shadow-lg"
@@ -454,6 +510,12 @@ function DietResult({ result, onReset }: { result: any; onReset: () => void }) {
           className="rounded-full border-2 border-amber-300 bg-white px-6 py-3 font-medium text-amber-700 transition-all hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-800 dark:text-amber-300 dark:hover:bg-slate-700"
         >
           易经问卦
+        </a>
+        <a
+          href="/favorites"
+          className="rounded-full border-2 border-pink-300 bg-white px-6 py-3 font-medium text-pink-700 transition-all hover:bg-pink-50 dark:border-pink-700 dark:bg-slate-800 dark:text-pink-300 dark:hover:bg-slate-700"
+        >
+          ⭐ 收藏夹
         </a>
       </div>
     </div>
