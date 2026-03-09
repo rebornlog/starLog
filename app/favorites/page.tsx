@@ -7,6 +7,8 @@ import { getFavorites, removeFavorite, formatTime, FavoriteItem } from '@/lib/st
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'iching' | 'zodiac' | 'diet'>('all');
+  const [showExport, setShowExport] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
 
   useEffect(() => {
     const data = getFavorites();
@@ -16,6 +18,60 @@ export default function FavoritesPage() {
   const handleRemove = (type: string, id: string) => {
     if (removeFavorite(type, id)) {
       setFavorites(favorites.filter(f => !(f.type === type && f.id === id)));
+    }
+  };
+
+  // 导出收藏为 JSON
+  const handleExport = () => {
+    const dataStr = JSON.stringify(favorites, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `starlog-favorites-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setExportSuccess(true);
+    setTimeout(() => setExportSuccess(false), 3000);
+  };
+
+  // 导入收藏
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target?.result as string);
+        if (Array.isArray(imported)) {
+          // 合并收藏（去重）
+          const existingIds = new Set(favorites.map(f => `${f.type}-${f.id}`));
+          const newFavorites = imported.filter(
+            (item: FavoriteItem) => !existingIds.has(`${item.type}-${item.id}`)
+          );
+          
+          if (newFavorites.length > 0) {
+            localStorage.setItem('starlog_favorites', JSON.stringify([...newFavorites, ...favorites]));
+            setFavorites([...newFavorites, ...favorites]);
+            alert(`成功导入 ${newFavorites.length} 条收藏！`);
+          } else {
+            alert('没有新的收藏需要导入');
+          }
+        }
+      } catch (error) {
+        alert('导入失败：文件格式不正确');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+  // 清空所有收藏
+  const handleClearAll = () => {
+    if (confirm('确定要清空所有收藏吗？此操作不可恢复！')) {
+      localStorage.removeItem('starlog_favorites');
+      setFavorites([]);
     }
   };
 
@@ -54,9 +110,12 @@ export default function FavoritesPage() {
           </p>
         </div>
 
-        {/* 统计信息 */}
+        {/* 统计信息和管理按钮 */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {/* 统计 + 管理按钮 */}
+          <div className="flex flex-col md:flex-row gap-6 items-center justify-between mb-6">
+            {/* 统计 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
             <div className="text-center">
               <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{favorites.length}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">总收藏</p>
@@ -79,15 +138,60 @@ export default function FavoritesPage() {
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">饮食</p>
             </div>
-            <div className="text-center md:col-span-1 col-span-2">
+            </div>
+            
+            {/* 管理按钮 */}
+            <div className="flex gap-3 justify-center md:col-span-4 col-span-2">
+              <button
+                onClick={handleExport}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors text-sm font-medium flex items-center gap-2"
+                title="导出收藏为 JSON 文件"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                导出
+              </button>
+              
+              <label className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                导入
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+              </label>
+              
+              <button
+                onClick={handleClearAll}
+                className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2"
+                title="清空所有收藏"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                清空
+              </button>
+              
               <Link
                 href="/"
-                className="inline-block px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
               >
-                ← 返回首页
+                ← 首页
               </Link>
             </div>
           </div>
+          
+          {/* 导出成功提示 */}
+          {exportSuccess && (
+            <div className="mb-4 p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-center text-sm font-medium animate-pulse">
+              ✅ 导出成功！
+            </div>
+          )}
         </div>
 
         {/* 筛选器 */}
