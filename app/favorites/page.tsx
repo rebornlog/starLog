@@ -9,6 +9,7 @@ export default function FavoritesPage() {
   const { showToast } = useToast();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'iching' | 'zodiac' | 'diet'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showExport, setShowExport] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
 
@@ -84,9 +85,18 @@ export default function FavoritesPage() {
     }
   };
 
-  const filteredFavorites = filter === 'all' 
+  // 双重筛选：先按类型，再按搜索关键词
+  const filteredFavorites = (filter === 'all' 
     ? favorites 
-    : favorites.filter(f => f.type === filter);
+    : favorites.filter(f => f.type === filter)
+  ).filter(item => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      item.title.toLowerCase().includes(query) ||
+      getTypeLabel(item.type).toLowerCase().includes(query)
+    );
+  });
 
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -121,6 +131,48 @@ export default function FavoritesPage() {
 
         {/* 统计信息和管理按钮 */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl mb-8">
+          {/* 搜索框 */}
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="🔍 搜索收藏..."
+                className="w-full px-4 py-3 pl-12 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white transition-all"
+              />
+              <svg
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  aria-label="清空搜索"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                找到 {filteredFavorites.length} 条相关收藏
+              </p>
+            )}
+          </div>
+
           {/* 统计 + 管理按钮 */}
           <div className="flex flex-col gap-4 mb-6">
             {/* 统计 */}
