@@ -113,9 +113,9 @@ export default function FavoritesPage() {
         {/* 统计信息和管理按钮 */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl mb-8">
           {/* 统计 + 管理按钮 */}
-          <div className="flex flex-col md:flex-row gap-6 items-center justify-between mb-6">
+          <div className="flex flex-col gap-4 mb-6">
             {/* 统计 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <div className="text-center">
               <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{favorites.length}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">总收藏</p>
@@ -140,24 +140,24 @@ export default function FavoritesPage() {
             </div>
             </div>
             
-            {/* 管理按钮 */}
-            <div className="flex gap-3 justify-center md:col-span-4 col-span-2">
+            {/* 管理按钮 - 移动端优化 */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={handleExport}
-                className="px-4 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors text-sm font-medium flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation"
                 title="导出收藏为 JSON 文件"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                导出
+                <span className="hidden sm:inline">导出</span>
               </button>
               
-              <label className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer">
+              <label className="px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation cursor-pointer active:scale-95 transition-transform">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                导入
+                <span className="hidden sm:inline">导入</span>
                 <input
                   type="file"
                   accept=".json"
@@ -168,20 +168,23 @@ export default function FavoritesPage() {
               
               <button
                 onClick={handleClearAll}
-                className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation active:scale-95 transition-transform"
                 title="清空所有收藏"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                清空
+                <span className="hidden sm:inline">清空</span>
               </button>
               
               <Link
                 href="/"
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation active:scale-95 transition-transform"
               >
-                ← 首页
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="hidden sm:inline">首页</span>
               </Link>
             </div>
           </div>
@@ -194,8 +197,8 @@ export default function FavoritesPage() {
           )}
         </div>
 
-        {/* 筛选器 */}
-        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+        {/* 筛选器 - 移动端优化 */}
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8 justify-center">
           {[
             { key: 'all', label: '全部', icon: '📚' },
             { key: 'iching', label: '问卦', icon: '☯' },
@@ -205,37 +208,38 @@ export default function FavoritesPage() {
             <button
               key={key}
               onClick={() => setFilter(key as any)}
-              className={`px-6 py-3 rounded-full font-medium transition-all ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all min-h-[44px] touch-manipulation active:scale-95 ${
                 filter === key
                   ? 'bg-purple-600 text-white shadow-lg scale-105'
                   : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-slate-700'
               }`}
             >
-              {icon} {label}
+              <span className="text-base sm:inline">{icon}</span>
+              <span className="ml-1.5 sm:ml-2 text-sm sm:text-base">{label}</span>
             </button>
           ))}
         </div>
 
         {/* 收藏列表 */}
         {filteredFavorites.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 shadow-xl text-center">
-            <div className="text-6xl mb-4">📭</div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 sm:p-12 shadow-xl text-center">
+            <div className="text-5xl sm:text-6xl mb-4">📭</div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
               还没有收藏
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6">
               去探索喜欢的卦象和运势，添加收藏吧！
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-wrap gap-3 justify-center">
               <Link
                 href="/iching"
-                className="px-6 py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
               >
-                易经问卦
+                ☯ 问卦
               </Link>
               <Link
                 href="/zodiac"
-                className="px-6 py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
               >
                 星座运势
               </Link>
