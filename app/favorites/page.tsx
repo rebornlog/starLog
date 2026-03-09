@@ -10,6 +10,8 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'iching' | 'zodiac' | 'diet'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showExport, setShowExport] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
 
@@ -22,6 +24,57 @@ export default function FavoritesPage() {
     if (removeFavorite(type, id)) {
       setFavorites(favorites.filter(f => !(f.type === type && f.id === id)));
       showToast('已取消收藏', 'info');
+    }
+  };
+
+  // 切换选择模式
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedIds(new Set());
+    showToast(selectMode ? '已退出选择模式' : '已进入选择模式，可多选收藏', 'info');
+  };
+
+  // 切换单个收藏选择状态
+  const toggleSelect = (type: string, id: string) => {
+    const key = `${type}-${id}`;
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(key)) {
+      newSelected.delete(key);
+    } else {
+      newSelected.add(key);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredFavorites.length) {
+      setSelectedIds(new Set());
+    } else {
+      const allIds = new Set(filteredFavorites.map(f => `${f.type}-${f.id}`));
+      setSelectedIds(allIds);
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) {
+      showToast('请先选择要删除的收藏', 'warning');
+      return;
+    }
+
+    if (confirm(`确定要删除选中的 ${selectedIds.size} 条收藏吗？此操作不可恢复！`)) {
+      let newFavorites = [...favorites];
+      selectedIds.forEach(key => {
+        const [type, ...rest] = key.split('-');
+        const id = rest.join('-');
+        removeFavorite(type, id);
+        newFavorites = newFavorites.filter(f => !(f.type === type && f.id === id));
+      });
+      setFavorites(newFavorites);
+      setSelectedIds(new Set());
+      setSelectMode(false);
+      showToast(`已删除 ${selectedIds.size} 条收藏`, 'success');
     }
   };
 
@@ -258,27 +311,79 @@ export default function FavoritesPage() {
           )}
         </div>
 
+        {/* 批量操作工具栏 */}
+        {selectMode && (
+          <div className="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-2xl p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleSelectAll}
+                  className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
+                >
+                  {selectedIds.size === filteredFavorites.length ? '取消全选' : '全选'}
+                </button>
+                <span className="text-purple-700 dark:text-purple-300 font-medium">
+                  已选择 {selectedIds.size} / {filteredFavorites.length} 项
+                </span>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={toggleSelectMode}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleBatchDelete}
+                  disabled={selectedIds.size === 0}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  删除选中 ({selectedIds.size})
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 筛选器 - 移动端优化 */}
-        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8 justify-center">
-          {[
-            { key: 'all', label: '全部', icon: '📚' },
-            { key: 'iching', label: '问卦', icon: '☯' },
-            { key: 'zodiac', label: '星座', icon: '✨' },
-            { key: 'diet', label: '饮食', icon: '🥗' },
-          ].map(({ key, label, icon }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key as any)}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all min-h-[44px] touch-manipulation active:scale-95 ${
-                filter === key
-                  ? 'bg-purple-600 text-white shadow-lg scale-105'
-                  : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-slate-700'
-              }`}
-            >
-              <span className="text-base sm:inline">{icon}</span>
-              <span className="ml-1.5 sm:ml-2 text-sm sm:text-base">{label}</span>
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8 justify-between items-center">
+          {/* 左侧：类型筛选 */}
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+            {[
+              { key: 'all', label: '全部', icon: '📚' },
+              { key: 'iching', label: '问卦', icon: '☯' },
+              { key: 'zodiac', label: '星座', icon: '✨' },
+              { key: 'diet', label: '饮食', icon: '🥗' },
+            ].map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key as any)}
+                className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all min-h-[44px] touch-manipulation active:scale-95 ${
+                  filter === key
+                    ? 'bg-purple-600 text-white shadow-lg scale-105'
+                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="text-base sm:inline">{icon}</span>
+                <span className="ml-1.5 sm:ml-2 text-sm sm:text-base">{label}</span>
+              </button>
+            ))}
+          </div>
+          
+          {/* 右侧：批量操作按钮 */}
+          <button
+            onClick={toggleSelectMode}
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all min-h-[44px] touch-manipulation active:scale-95 flex items-center gap-2 ${
+              selectMode
+                ? 'bg-purple-600 text-white shadow-lg'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-sm sm:text-base">{selectMode ? '完成' : '批量管理'}</span>
+          </button>
         </div>
 
         {/* 收藏列表 */}
