@@ -1,6 +1,6 @@
 /* SEO 优化和可访问性样式 */
 
-/* 减少动画偏好支持 */
+/* 减少动画偏好支持 - 移动端性能优化 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -8,6 +8,27 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 移动端性能优化 - 简化装饰元素 */
+@media (max-width: 768px) {
+  /* 减少背景装饰元素数量 */
+  .decorative-element {
+    opacity: 0.5 !important;
+  }
+  
+  /* 简化复杂动画 */
+  .animate-star-twinkle,
+  .animate-cloud-float,
+  .animate-cloud-float-slow {
+    animation-duration: 4s !important;
+  }
+  
+  /* 移除部分装饰元素 */
+  .hidden-mobile {
+    display: none !important;
   }
 }
 
