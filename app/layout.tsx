@@ -9,6 +9,7 @@ import Header from '@/components/Header'
 import SectionContainer from '@/components/SectionContainer'
 import Footer from '@/components/Footer'
 import { ToastProvider } from '@/components/Toast'
+import { LoadingProvider } from '@/components/LoadingContext'
 import siteMetadata from '@/data/siteMetadata'
 import { Metadata } from 'next'
 
@@ -92,15 +93,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           fontFamily: 'var(--theme-font, system-ui, sans-serif)',
         }}
       >
-        <ToastProvider>
-          <SectionContainer>
-            <div className="flex h-screen flex-col">
-              <Analytics analyticsConfig={siteMetadata.analytics} />
-              <Header />
-              <main className="mb-auto">{children}</main>
-            </div>
-          </SectionContainer>
-        </ToastProvider>
+        <LoadingProvider>
+          <ToastProvider>
+            <SectionContainer>
+              <div className="flex h-screen flex-col">
+                <Analytics analyticsConfig={siteMetadata.analytics} />
+                <Header />
+                <main className="mb-auto">{children}</main>
+              </div>
+            </SectionContainer>
+          </ToastProvider>
+        </LoadingProvider>
         <Footer />
       </body>
     </html>
