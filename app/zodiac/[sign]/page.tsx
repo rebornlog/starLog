@@ -51,7 +51,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
   const sign = ZODIAC_SIGNS.find(s => s.id === signId);
   const { showToast } = useToast();
   
-  const [fortune, setFortune] = useState<any>(null);
+  const [fortune, setFortune] = useState<DailyFortune | null>(null);
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +59,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
     if (!sign) return;
 
     // 生成今日运势
-    const fortuneData = generateDailyFortune(sign, new Date());
+    const fortuneData = generateDailyFortune(sign.id, new Date());
     setFortune(fortuneData);
     
     // 检查收藏状态
