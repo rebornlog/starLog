@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { PrismaClient } from '@prisma/client'
 import { getCachedArticle, setCachedArticle, invalidateArticleCache } from '@/lib/redis'
+import TableOfContents from '@/components/TableOfContents'
+import ArticleContent from '@/components/ArticleContent'
 
 const prisma = new PrismaClient()
 
@@ -149,6 +151,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   return (
     <div className="px-4 py-12 max-w-4xl mx-auto">
+      {/* 目录组件 */}
+      <TableOfContents />
+
       {/* 返回按钮 */}
       <Link
         href="/blog"
@@ -213,11 +218,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         </div>
 
         {/* 文章内容 - Markdown 渲染 */}
-        <div className="prose prose-lg dark:prose-invert max-w-none">
-          <div className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap font-sans">
-            {post.content}
-          </div>
-        </div>
+        <ArticleContent content={post.content} />
 
         {/* 底部标签 */}
         <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
