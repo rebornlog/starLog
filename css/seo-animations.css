@@ -1,0 +1,106 @@
+/* SEO 优化和可访问性样式 */
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 云朵动画 */
+@keyframes cloud-float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, -5px);
+  }
+}
+
+@keyframes cloud-float-slow {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-8px, 8px);
+  }
+}
+
+/* 植物摇摆动画 */
+@keyframes plant-sway {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+/* 星星闪烁动画 */
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 动画类 */
+.animate-cloud-float {
+  animation: cloud-float 6s ease-in-out infinite;
+}
+
+.animate-cloud-float-slow {
+  animation: cloud-float-slow 8s ease-in-out infinite;
+}
+
+.animate-plant-sway {
+  animation: plant-sway 3s ease-in-out infinite;
+}
+
+.animate-plant-sway-delay-1 {
+  animation-delay: 0.2s;
+}
+
+.animate-plant-sway-delay-2 {
+  animation-delay: 0.4s;
+}
+
+.animate-plant-sway-delay-3 {
+  animation-delay: 0.6s;
+}
+
+.animate-plant-sway-delay-4 {
+  animation-delay: 0.8s;
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle 2s ease-in-out infinite;
+}
+
+/* 可访问性：焦点样式 */
+*:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* 可访问性：跳过导航链接 */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #10b981;
+  color: white;
+  padding: 8px;
+  z-index: 100;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 0;
+}

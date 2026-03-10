@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 生图 - 司机腰靠展示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .prompt-box {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        .prompt-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .prompt-text {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .status-box {
+            background: #fff5f5;
+            border: 2px dashed #fc8181;
+            padding: 30px;
+            text-align: center;
+            margin: 40px 0;
+            border-radius: 12px;
+        }
+        .status-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .status-text {
+            font-size: 18px;
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+        .info-text {
+            color: #718096;
+            font-size: 14px;
+        }
+        .api-note {
+            background: #ebf8ff;
+            border: 1px solid #4299e1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        .api-note h3 {
+            color: #2b6cb0;
+            margin-top: 0;
+        }
+        .api-note ul {
+            color: #4a5568;
+            line-height: 1.8;
+        }
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 AI 生图生成中</h1>
+        <p class="subtitle">星_log 图片生成服务</p>
+
+        <div class="prompt-box">
+            <div class="prompt-label">📝 生图提示词:</div>
+            <div class="prompt-text">
+                <strong>中文:</strong> 男性司机背靠腰靠，舒适驾驶姿态，高清 8K 质量<br><br>
+                <strong>English:</strong> Professional male driver sitting comfortably in car driver seat with lumbar support cushion behind his back, relaxed driving posture, modern car interior, natural lighting, high quality, photorealistic, 8K resolution, commercial photography style
+            </div>
+        </div>
+
+        <div class="status-box">
+            <div class="status-icon">⏳</div>
+            <div class="status-text">图片正在生成中...</div>
+            <div class="info-text">
+                预计需要 30-60 秒<br>
+                生成完成后将自动显示在这里
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/generated/driver_lumbar_support_20260310_174509.png" class="download-btn" download>
+                📥 下载生成的图片
+            </a>
+        </div>
+
+        <div class="api-note">
+            <h3>🔧 需要配置生图 API</h3>
+            <ul>
+                <li><strong>推荐服务:</strong> Stability AI / Midjourney / DALL-E 3</li>
+                <li><strong>配置文件:</strong> <code>generate_image.py</code></li>
+                <li><strong>需要设置:</strong> API Key 和 Endpoint</li>
+                <li><strong>输出目录:</strong> <code>/home/admin/.openclaw/workspace/starLog/public/generated/</code></li>
+                <li><strong>访问地址:</strong> <code>http://47.79.20.10:80/generated/文件名.png</code></li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #e2e8f0; text-align: center; color: #718096;">
+            <p><strong>生成时间:</strong> 2026-03-10 17:45</p>
+            <p><strong>文件名称:</strong> driver_lumbar_support_20260310_174509.png</p>
+            <p><strong>分辨率:</strong> 1024x1024 (可配置)</p>
+        </div>
+    </div>
+
+    <script>
+        // 自动刷新检查图片是否生成完成
+        setTimeout(() => {
+            location.reload();
+        }, 60000); // 60 秒后刷新
+    </script>
+</body>
+</html>

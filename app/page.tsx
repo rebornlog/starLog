@@ -1,8 +1,66 @@
 import Link from 'next/link'
 import { PrismaClient } from '@prisma/client'
 import { getCachedRecentPosts, setCachedRecentPosts } from '@/lib/redis'
+import { Metadata } from 'next'
 
 const prisma = new PrismaClient()
+
+// SEO 元数据
+export const metadata: Metadata = {
+  title: 'starLog - 个人知识库 | 技术博客·星座运势·易经问卦·能量饮食',
+  description: 'starLog 是一个基于 Next.js 的个人知识库系统，集成技术博客、A 股行情、星座运势、易经问卦、能量饮食等功能。宫崎骏风格设计，记录技术的成长轨迹，探索生活的无限可能。',
+  keywords: ['starLog', '个人知识库', '技术博客', '星座运势', '易经问卦', '能量饮食', 'Next.js', 'React', 'TypeScript'],
+  authors: [{ name: '水镜先生' }],
+  creator: '水镜先生',
+  publisher: 'starLog',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://starlog.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'starLog - 个人知识库',
+    description: '像龙猫森林一样宁静的知识花园',
+    url: 'https://starlog.com',
+    siteName: 'starLog',
+    locale: 'zh_CN',
+    type: 'website',
+    images: [
+      {
+        url: '/static/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'starLog - 个人知识库',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'starLog - 个人知识库',
+    description: '像龙猫森林一样宁静的知识花园',
+    creator: '@starlog',
+    images: ['/static/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+  },
+}
 
 interface Post {
   id: string
@@ -144,9 +202,9 @@ export default async function Home() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           {/* 宫崎骏风格标题区域 */}
           <div className="text-center mb-6 sm:mb-8 relative">
-            {/* 装饰性云朵 - 移动端隐藏或缩小 */}
-            <div className="hidden sm:block absolute -top-8 -left-8 text-6xl animate-pulse opacity-60">☁️</div>
-            <div className="hidden sm:block absolute -top-12 -right-12 text-5xl animate-pulse opacity-40 delay-300">☁️</div>
+            {/* 装饰性云朵 - 仅桌面端显示，使用 CSS 动画 */}
+            <div className="hidden md:block absolute -top-8 -left-8 text-6xl opacity-60 animate-cloud-float" />
+            <div className="hidden md:block absolute -top-12 -right-12 text-5xl opacity-40 animate-cloud-float-slow" />
             
             {/* 主标题 */}
             <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-8xl font-bold mb-3 sm:mb-4 relative z-10">
@@ -155,13 +213,13 @@ export default async function Home() {
               </span>
             </h1>
             
-            {/* 装饰性植物 */}
-            <div className="flex justify-center gap-2 text-3xl mb-4">
-              <span className="animate-bounce delay-100">🌱</span>
-              <span className="animate-bounce delay-200">🌿</span>
-              <span className="animate-bounce delay-300">🍃</span>
-              <span className="animate-bounce delay-400">🌲</span>
-              <span className="animate-bounce delay-500">🌳</span>
+            {/* 装饰性植物 - 移动端简化 */}
+            <div className="flex justify-center gap-1 sm:gap-2 text-2xl sm:text-3xl mb-3 sm:mb-4">
+              <span className="animate-plant-sway">🌱</span>
+              <span className="animate-plant-sway-delay-1">🌿</span>
+              <span className="animate-plant-sway-delay-2">🍃</span>
+              <span className="hidden sm:inline-block animate-plant-sway-delay-3">🌲</span>
+              <span className="hidden sm:inline-block animate-plant-sway-delay-4">🌳</span>
             </div>
           </div>
 

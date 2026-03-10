@@ -6,6 +6,7 @@ import { castHexagram, interpretHexagram } from '@/lib/iching/divination';
 import { HEXAGRAMS } from '@/lib/iching/data';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 import { useToast } from '@/components/Toast';
+import HexagramVisual from '@/components/HexagramVisual';
 
 type Method = 'random' | 'time' | 'number';
 

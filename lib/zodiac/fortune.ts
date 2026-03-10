@@ -15,6 +15,9 @@ export interface DailyFortune {
   careerAdvice: string // 事业建议
   wealthAdvice: string // 财运建议
   healthAdvice: string // 健康建议
+  description: string // 整体运势描述
+  good: string[] // 今日宜
+  bad: string[] // 今日忌
 }
 
 // 运势描述库
@@ -74,6 +77,19 @@ const LUCKY_COLORS = [
   '优雅紫', '浪漫粉', '神秘黑', '纯洁白', '高贵金',
 ]
 
+// 今日宜忌库
+const GOOD_ACTIVITIES = [
+  '约会', '表白', '聚会', '旅行', '运动', '学习', '工作', '谈判', '签约', '投资',
+  '理财', '购物', '整理', '清洁', '装饰', '理发', '美甲', '健身', '瑜伽', '冥想',
+  '阅读', '写作', '创作', '编程', '设计', '会议', '面试', '考试', '求职', '搬家',
+]
+
+const BAD_ACTIVITIES = [
+  '熬夜', '争吵', '冲动消费', '高风险投资', '暴饮暴食', '久坐不动',
+  '过度工作', '情绪化决策', '与他人争执', '借钱', '担保', '签署重要合同',
+  '开始新项目', '重大决策', '长途旅行', '极限运动', '过度饮酒',
+]
+
 // 根据日期和星座生成分项运势
 export function generateDailyFortune(zodiacId: string, date: Date = new Date()): DailyFortune {
   // 使用日期和星座 ID 生成种子
@@ -98,6 +114,16 @@ export function generateDailyFortune(zodiacId: string, date: Date = new Date()):
   const wealthAdvice = FORTUNE_ADVICE.wealth[Math.abs(seed * 31) % FORTUNE_ADVICE.wealth.length]
   const healthAdvice = FORTUNE_ADVICE.health[Math.abs(seed * 37) % FORTUNE_ADVICE.health.length]
   
+  // 整体运势描述
+  const overallDesc = getFortuneDescription(overall)
+  const description = `${overallDesc} ${loveAdvice}`
+  
+  // 今日宜忌（各选 3-5 项）
+  const goodCount = 3 + (Math.abs(seed * 41) % 3)
+  const badCount = 2 + (Math.abs(seed * 43) % 3)
+  const good = shuffleArray(GOOD_ACTIVITIES, seed).slice(0, goodCount)
+  const bad = shuffleArray(BAD_ACTIVITIES, seed * 47).slice(0, badCount)
+  
   return {
     overall,
     love,
@@ -110,7 +136,34 @@ export function generateDailyFortune(zodiacId: string, date: Date = new Date()):
     careerAdvice,
     wealthAdvice,
     healthAdvice,
+    description,
+    good,
+    bad,
   }
+}
+
+// 运势等级描述
+function getFortuneDescription(score: number): string {
+  const descriptions = {
+    5: '今日运势极佳，诸事顺遂！',
+    4: '运势不错，把握机会会有收获。',
+    3: '运势平稳，按部就班即可。',
+    2: '运势稍弱，需谨慎行事。',
+    1: '运势低迷，宜静不宜动。',
+  }
+  return descriptions[score as keyof typeof descriptions] || '运势平稳。'
+}
+
+// 数组洗牌函数
+function shuffleArray<T>(array: T[], seed: number): T[] {
+  const shuffled = [...array]
+  let hash = Math.abs(seed)
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    hash = (hash * 9301 + 49297) % 233280
+    const j = Math.floor((hash / 233280) * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
 }
 
 // 字符串哈希函数

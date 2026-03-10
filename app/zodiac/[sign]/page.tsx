@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { use } from 'react';
 import { ZODIAC_SIGNS, getZodiacSign } from '@/lib/zodiac/data';
-import { generateDailyFortune } from '@/lib/zodiac/fortune';
+import { generateDailyFortune, type DailyFortune } from '@/lib/zodiac/fortune';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 import { useToast } from '@/components/Toast';
 
