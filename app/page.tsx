@@ -126,6 +126,7 @@ export default async function Home() {
     { icon: '☯', name: '问卦', href: '/iching' },
     { icon: '🥗', name: '饮食', href: '/diet' },
     { icon: '⭐', name: '收藏', href: '/favorites' },
+    { icon: '📅', name: '大事纪', href: '/timeline' },
   ]
 
   function formatDate(dateString: string) {
