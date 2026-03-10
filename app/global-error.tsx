@@ -1,5 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
+import { logError, getFriendlyMessage } from '@/lib/error-handler'
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +10,10 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    // 记录全局错误日志
+    logError(error, { component: 'global-error.tsx' })
+  }, [error])
   return (
     <html lang="zh-CN">
       <body>
@@ -41,8 +48,11 @@ export default function GlobalError({
             </h1>
             
             {/* 错误信息 */}
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-              {error.message || '系统遇到了一些问题，我们正在努力修复'}
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">
+              {getFriendlyMessage(error)}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-8">
+              别担心，我们已经记录了这个问题
             </p>
 
             {/* 操作按钮 */}

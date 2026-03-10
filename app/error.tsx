@@ -1,5 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
+import { logError, getFriendlyMessage } from '@/lib/error-handler'
+
 export default function Error({
   error,
   reset,
@@ -7,6 +10,10 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    // 记录错误日志
+    logError(error, { component: 'error.tsx' })
+  }, [error])
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="text-center max-w-md">
@@ -33,8 +40,11 @@ export default function Error({
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
           出错了！
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {error.message || '发生了一个意外错误，请稍后重试'}
+        <p className="text-gray-600 dark:text-gray-400 mb-2">
+          {getFriendlyMessage(error)}
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+          别担心，我们已经记录了这个问题
         </p>
 
         {/* 操作按钮 */}
