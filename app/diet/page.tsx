@@ -6,6 +6,8 @@ import { generateDietAdvice, FOOD_DATABASE } from '@/lib/bazi/food-database'
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
 import { useToast } from '@/components/Toast'
 import SEO from '@/components/SEO'
+import RadarChart from '@/components/RadarChart'
+import { Skeleton } from '@/components/Skeleton'
 
 export default function DietPage() {
   const { showToast } = useToast()
@@ -342,7 +344,7 @@ function DietResult({ result, onReset, favorited, onToggleFavorite }: DietResult
 
   return (
     <div className="space-y-6">
-      {/* 八字信息 */}
+      {/* 八字排盘 + 五行雷达图 */}
       <div className="rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-800">
         <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-green-900 dark:text-green-100">
           <span className="text-3xl">📅</span>
@@ -351,6 +353,22 @@ function DietResult({ result, onReset, favorited, onToggleFavorite }: DietResult
         <div className="mb-4 text-center">
           <p className="mb-4 text-gray-600 dark:text-gray-400">{birthInfo}</p>
         </div>
+        
+        {/* 五行雷达图 */}
+        <div className="mb-8 flex justify-center">
+          <RadarChart
+            data={[
+              { label: '金', value: ((bazi.elements['金'] || 0) / 8) * 100, color: '#fbbf24' },
+              { label: '木', value: ((bazi.elements['木'] || 0) / 8) * 100, color: '#10b981' },
+              { label: '水', value: ((bazi.elements['水'] || 0) / 8) * 100, color: '#3b82f6' },
+              { label: '火', value: ((bazi.elements['火'] || 0) / 8) * 100, color: '#ef4444' },
+              { label: '土', value: ((bazi.elements['土'] || 0) / 8) * 100, color: '#92400e' },
+            ]}
+            size={280}
+            className="animate-fade-in"
+          />
+        </div>
+        
         <div className="grid grid-cols-4 gap-4">
           {[
             { label: '年柱', pillar: bazi.yearPillar },
