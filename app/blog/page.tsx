@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { SkeletonCard } from '@/components/Skeleton'
 
 interface Post {
   id: string
@@ -32,16 +33,18 @@ export default function BlogPage() {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, totalPages: 0 })
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [popularTags, setPopularTags] = useState<string[]>([])
 
   const categories = [
-    { id: 'tech', name: '技术', icon: '💻' },
-    { id: 'finance', name: '金融', icon: '📈' },
-    { id: 'fengshui', name: '风水', icon: '🧭' },
-    { id: 'business', name: '商业', icon: '🔮' },
+    { id: 'tech', name: '技术', icon: '💻', color: 'from-blue-500 to-cyan-500' },
+    { id: 'finance', name: '金融', icon: '📈', color: 'from-green-500 to-emerald-500' },
+    { id: 'fengshui', name: '风水', icon: '🧭', color: 'from-purple-500 to-pink-500' },
+    { id: 'business', name: '商业', icon: '🔮', color: 'from-amber-500 to-orange-500' },
   ]
 
   useEffect(() => {
     fetchPosts()
+    fetchPopularTags()
   }, [selectedCategory])
 
   async function fetchPosts() {
@@ -62,6 +65,17 @@ export default function BlogPage() {
       console.error('Failed to fetch posts:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchPopularTags() {
+    try {
+      const res = await fetch('/api/posts?tags=popular')
+      const data = await res.json()
+      setPopularTags(data.tags || ['React', 'TypeScript', 'Next.js', 'Redis', '性能优化'])
+    } catch (error) {
+      console.error('Failed to fetch popular tags:', error)
+      setPopularTags(['React', 'TypeScript', 'Next.js', 'Redis', '性能优化'])
     }
   }
 
@@ -88,16 +102,17 @@ export default function BlogPage() {
       </div>
 
       {/* 分类筛选 */}
-      <div className="flex flex-wrap justify-center gap-3 mb-12">
+      <div className="flex flex-wrap justify-center gap-3 mb-8">
         <button
           onClick={() => setSelectedCategory(null)}
-          className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
+          className={`px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 ${
             !selectedCategory
-              ? 'bg-emerald-500 text-white shadow-lg'
+              ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg scale-105'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
         >
-          全部
+          <span>📚</span>
+          <span>全部</span>
         </button>
         {categories.map((cat) => (
           <button
@@ -105,21 +120,35 @@ export default function BlogPage() {
             onClick={() => setSelectedCategory(cat.id)}
             className={`px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 ${
               selectedCategory === cat.id
-                ? 'bg-emerald-500 text-white shadow-lg'
+                ? `bg-gradient-to-r ${cat.color} text-white shadow-lg scale-105`
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
-            <span>{cat.icon}</span>
+            <span className="text-lg">{cat.icon}</span>
             <span>{cat.name}</span>
           </button>
         ))}
       </div>
 
+      {/* 热门标签云 */}
+      <div className="flex flex-wrap justify-center gap-2 mb-12">
+        <span className="text-sm text-gray-500 dark:text-gray-400 py-2">热门标签：</span>
+        {popularTags.map((tag, index) => (
+          <Link
+            key={tag}
+            href={`/blog?tag=${tag}`}
+            className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            #{tag}
+          </Link>
+        ))}
+      </div>
+
       {/* 文章列表 */}
       {loading ? (
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4 animate-pulse">📚</div>
-          <p className="text-gray-500 dark:text-gray-400">加载中...</p>
+        <div className="space-y-6">
+          <SkeletonCard count={5} />
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-20">

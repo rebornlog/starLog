@@ -183,3 +183,27 @@ code {
     display: none !important;
   }
 }
+
+/* 色彩对比度优化 - WCAG AA 标准 */
+@layer base {
+  /* 优化正文文字对比度 */
+  body {
+    @apply text-gray-800 dark:text-gray-100;
+  }
+  
+  /* 次要文字提升对比度 */
+  .text-gray-600 {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+  
+  /* 链接可访问性优化 - 悬停下划线 */
+  a:not(.no-underline):not(.hover\:no-underline) {
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 0.2s ease;
+  }
+  
+  a:not(.no-underline):not(.hover\:no-underline):hover {
+    text-decoration-color: currentColor;
+  }
+}
