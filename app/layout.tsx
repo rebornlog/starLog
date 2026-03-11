@@ -94,13 +94,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           fontFamily: 'var(--theme-font, system-ui, sans-serif)',
         }}
       >
+        {/* 无障碍访问：跳过导航链接 */}
+        <a href="#main-content" className="skip-link sr-only focus:not-sr-only">
+          跳到主要内容
+        </a>
         <LoadingProvider>
           <ToastProvider>
             <SectionContainer>
               <div className="flex h-screen flex-col">
                 <Analytics analyticsConfig={siteMetadata.analytics} />
                 <Header />
-                <main className="mb-auto">{children}</main>
+                <main className="mb-auto" id="main-content">{children}</main>
               </div>
             </SectionContainer>
           </ToastProvider>
