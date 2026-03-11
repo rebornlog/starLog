@@ -291,7 +291,7 @@ function NumberInput({ onSubmit, onBack }: { onSubmit: (nums: [number, number, n
 
 // 卦象结果组件
 function HexagramResult({ result, onReset }: { result: any; onReset: () => void }) {
-  const { hexagram, character, method, timestamp, interpretation } = result;
+  const { hexagram, character, method, timestamp, interpretation, structure } = result;
 
   if (!hexagram) {
     return <div>卦象未找到</div>;
@@ -299,8 +299,14 @@ function HexagramResult({ result, onReset }: { result: any; onReset: () => void 
 
   return (
     <div className="space-y-6">
-      {/* 卦象头部 */}
+      {/* 卦象头部 - 添加可视化 */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl text-center">
+        {/* 卦象可视化 */}
+        <div className="mb-6 p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-700 dark:to-slate-600 rounded-xl">
+          <HexagramVisual structure={structure || hexagram.structure} size="lg" animated={true} />
+        </div>
+        
+        {/* 卦名字符 */}
         <div className="text-8xl mb-4 animate-pulse">{character}</div>
         <h2 className="text-3xl font-bold text-amber-900 dark:text-amber-100 mb-2">
           第{hexagram.number}卦 · {hexagram.name}
