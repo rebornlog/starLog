@@ -5,6 +5,7 @@ import { calculateBazi, getElementColor } from '@/lib/bazi/calculator'
 import { generateDietAdvice, FOOD_DATABASE } from '@/lib/bazi/food-database'
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
 import { useToast } from '@/components/Toast'
+import SEO from '@/components/SEO'
 
 export default function DietPage() {
   const { showToast } = useToast()
@@ -94,26 +95,37 @@ export default function DietPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 via-emerald-50 to-teal-50 px-4 py-12 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* 装饰背景 */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden opacity-10">
-        <div className="absolute top-20 left-10 text-8xl">🥗</div>
-        <div className="absolute right-10 bottom-20 text-8xl">🍲</div>
-        <div className="absolute top-1/2 left-1/4 text-6xl">🥕</div>
-        <div className="absolute top-1/3 right-1/4 text-6xl">🍎</div>
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-5xl">
-        {/* 标题 */}
-        <div className="mb-12 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-green-900 md:text-5xl dark:text-green-100">
-            🍲 能量饮食 🍲
-          </h1>
-          <p className="text-lg text-green-700 dark:text-green-300">根据生辰八字 · 定制专属饮食</p>
-          <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-            五行平衡 · 阴阳调和 · 吃出健康
-          </p>
+    <>
+      <SEO
+        title="能量饮食 - 八字五行饮食方案"
+        description="根据您的生辰八字分析五行强弱，定制专属能量饮食方案。包含推荐食物、避免食物、五行平衡建议和四季调养指南。"
+        keywords={['能量饮食', '八字饮食', '五行饮食', '健康饮食', '生辰八字', '五行平衡']}
+      />
+      <div className="min-h-screen bg-gradient-to-b from-green-50 via-emerald-50 to-teal-50 px-4 py-12 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+        {/* 装饰背景 - 移动端简化 */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden opacity-10 hidden-mobile">
+          <div className="absolute top-20 left-10 text-8xl">🥗</div>
+          <div className="absolute right-10 bottom-20 text-8xl">🍲</div>
+          <div className="absolute top-1/2 left-1/4 text-6xl">🥕</div>
+          <div className="absolute top-1/3 right-1/4 text-6xl">🍎</div>
         </div>
+
+        {/* 跳过导航链接 - 可访问性 */}
+        <a href="#main-content" className="skip-link">
+          跳转到主要内容
+        </a>
+
+        <div className="relative z-10 mx-auto max-w-5xl" id="main-content">
+          {/* 标题 */}
+          <div className="mb-12 text-center">
+            <h1 className="mb-4 text-4xl font-bold text-green-900 md:text-5xl dark:text-green-100">
+              🍲 能量饮食 🍲
+            </h1>
+            <p className="text-lg text-green-700 dark:text-green-300">根据生辰八字 · 定制专属饮食</p>
+            <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+              五行平衡 · 阴阳调和 · 吃出健康
+            </p>
+          </div>
 
         {!result ? (
           /* 输入表单 */
@@ -313,16 +325,19 @@ export default function DietPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
 // 结果展示组件
-function DietResult({ result, onReset, favorited, onToggleFavorite }: { 
-  result: any; 
+interface DietResultProps {
+  result: any;
   onReset: () => void;
   favorited: boolean;
   onToggleFavorite: () => void;
-}) {
+}
+
+function DietResult({ result, onReset, favorited, onToggleFavorite }: DietResultProps) {
   const { bazi, advice, birthInfo } = result
 
   return (
