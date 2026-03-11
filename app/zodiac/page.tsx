@@ -1,9 +1,16 @@
 import Link from 'next/link';
 import { ZODIAC_SIGNS } from '@/lib/zodiac/data';
+import { Metadata } from 'next';
 
-export const metadata = {
-  title: '星座运势 - starLog',
-  description: '十二星座每日运势查询',
+export const metadata: Metadata = {
+  title: '星座运势 - starLog | 十二星座每日运势查询',
+  description: '十二星座每日运势查询，包含爱情、事业、财运、健康运势，以及幸运颜色、幸运数字和今日宜忌。算法生成，趣味参考。',
+  keywords: ['星座运势', '十二星座', '每日运势', '爱情运势', '事业运势', '财运', '星座查询'],
+  openGraph: {
+    title: '星座运势 - starLog',
+    description: '探索星辰指引，发现今日运势',
+    type: 'website',
+  },
 };
 
 export default function ZodiacPage() {
@@ -40,7 +47,7 @@ export default function ZodiacPage() {
         </div>
 
         {/* 星座网格 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6" role="list">
           {ZODIAC_SIGNS.map((sign) => (
             <Link
               key={sign.id}
@@ -49,9 +56,11 @@ export default function ZodiacPage() {
                 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl 
                 hover:shadow-${sign.element === '火' ? 'orange' : sign.element === '土' ? 'green' : sign.element === '风' ? 'blue' : 'purple'}-500/30
                 backdrop-blur-sm bg-opacity-90`}
+              role="listitem"
+              aria-label={`查看${sign.name}（${sign.englishName}）的今日运势，${sign.dateRange}，${sign.element}象星座`}
             >
               {/* 星座图标 */}
-              <div className="text-5xl mb-3 transform group-hover:scale-110 transition-transform duration-300">
+              <div className="text-5xl mb-3 transform group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                 {sign.icon}
               </div>
               
