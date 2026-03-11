@@ -7,6 +7,8 @@ import { ZODIAC_SIGNS, getZodiacSign } from '@/lib/zodiac/data';
 import { generateDailyFortune, type DailyFortune } from '@/lib/zodiac/fortune';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 import { useToast } from '@/components/Toast';
+import RadarChart from '@/components/RadarChart';
+import { Skeleton } from '@/components/Skeleton';
 
 interface PageProps {
   params: Promise<{
@@ -185,77 +187,71 @@ export default function ZodiacSignPage({ params }: PageProps) {
             整体运势
           </h2>
           
-          <FortuneBar
-            label="综合运势"
-            score={fortune.overall}
-            color="bg-gradient-to-r from-yellow-400 to-orange-500"
-          />
+          {/* 运势雷达图 */}
+          <div className="flex justify-center mb-8">
+            <RadarChart
+              data={[
+                { label: '整体', value: fortune.overall, color: '#fbbf24' },
+                { label: '爱情', value: fortune.love, color: '#ec4899' },
+                { label: '事业', value: fortune.career, color: '#3b82f6' },
+                { label: '财运', value: fortune.wealth, color: '#f59e0b' },
+                { label: '健康', value: fortune.health, color: '#10b981' },
+              ]}
+              size={280}
+              className="animate-fade-in"
+            />
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <FortuneBar
+              label="综合运势"
+              score={fortune.overall}
+              color="bg-gradient-to-r from-yellow-400 to-orange-500"
+            />
+            <FortuneBar
+              label="幸运指数"
+              score={fortune.luckyNumber % 100}
+              color="bg-gradient-to-r from-pink-400 to-purple-500"
+            />
+          </div>
           
           <p className="text-white/90 text-lg leading-relaxed mt-6 p-4 bg-white/5 rounded-xl">
             {fortune.description}
           </p>
         </div>
 
-        {/* 分项运势 */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {/* 爱情运 */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-2xl">💕</span>
-              爱情运势
-            </h3>
-            <FortuneBar
-              label="爱情"
-              score={fortune.love}
-              color="bg-gradient-to-r from-pink-400 to-rose-500"
-            />
-          </div>
-
-          {/* 事业运 */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-2xl">💼</span>
-              事业运势
-            </h3>
-            <FortuneBar
-              label="事业"
-              score={fortune.career}
-              color="bg-gradient-to-r from-blue-400 to-indigo-500"
-            />
-          </div>
-
-          {/* 财运 */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-2xl">💰</span>
-              财运运势
-            </h3>
-            <FortuneBar
-              label="财运"
-              score={fortune.wealth}
-              color="bg-gradient-to-r from-yellow-400 to-amber-500"
-            />
-          </div>
-        </div>
-
-        {/* 幸运元素 */}
+        {/* 今日宜忌 + 幸运元素 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* 幸运元素 */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4">🍀 幸运元素</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <span className="text-2xl">🍀</span>
+              幸运元素
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <span className="text-white/70">幸运颜色</span>
                 <span className="text-white font-bold text-lg">{fortune.luckyColor}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <span className="text-white/70">幸运数字</span>
                 <span className="text-white font-bold text-lg">{fortune.luckyNumber}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <span className="text-white/70">幸运星座</span>
+                <span className="text-white font-bold text-lg">
+                  {ZODIAC_SIGNS[Math.abs(fortune.luckyNumber) % 12].name}
+                </span>
               </div>
             </div>
           </div>
 
+          {/* 今日宜忌 */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4">📅 今日宜忌</h3>
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <span className="text-2xl">📅</span>
+              今日宜忌
+            </h3>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -263,7 +259,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
                   <span className="text-white font-medium">宜</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {fortune.good.map((item: string) => (
+                  {fortune.good.map((item) => (
                     <span
                       key={item}
                       className="bg-green-500/30 text-green-200 px-3 py-1 rounded-full text-sm"
@@ -279,7 +275,7 @@ export default function ZodiacSignPage({ params }: PageProps) {
                   <span className="text-white font-medium">忌</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {fortune.bad.map((item: string) => (
+                  {fortune.bad.map((item) => (
                     <span
                       key={item}
                       className="bg-red-500/30 text-red-200 px-3 py-1 rounded-full text-sm"
@@ -289,6 +285,80 @@ export default function ZodiacSignPage({ params }: PageProps) {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 分项运势详解 */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <span className="text-3xl">📊</span>
+            分项运势详解
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* 爱情运 */}
+            <div className="bg-white/5 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-2xl">💕</span>
+                爱情运势
+              </h3>
+              <FortuneBar
+                label="爱情指数"
+                score={fortune.love}
+                color="bg-gradient-to-r from-pink-400 to-rose-500"
+              />
+              <p className="text-white/80 mt-4 text-sm leading-relaxed">
+                {fortune.loveAdvice}
+              </p>
+            </div>
+
+            {/* 事业运 */}
+            <div className="bg-white/5 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-2xl">💼</span>
+                事业运势
+              </h3>
+              <FortuneBar
+                label="事业指数"
+                score={fortune.career}
+                color="bg-gradient-to-r from-blue-400 to-indigo-500"
+              />
+              <p className="text-white/80 mt-4 text-sm leading-relaxed">
+                {fortune.careerAdvice}
+              </p>
+            </div>
+
+            {/* 财运 */}
+            <div className="bg-white/5 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-2xl">💰</span>
+                财运运势
+              </h3>
+              <FortuneBar
+                label="财运指数"
+                score={fortune.wealth}
+                color="bg-gradient-to-r from-yellow-400 to-amber-500"
+              />
+              <p className="text-white/80 mt-4 text-sm leading-relaxed">
+                {fortune.wealthAdvice}
+              </p>
+            </div>
+
+            {/* 健康运 */}
+            <div className="bg-white/5 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-2xl">💪</span>
+                健康运势
+              </h3>
+              <FortuneBar
+                label="健康指数"
+                score={fortune.health}
+                color="bg-gradient-to-r from-green-400 to-emerald-500"
+              />
+              <p className="text-white/80 mt-4 text-sm leading-relaxed">
+                {fortune.healthAdvice}
+              </p>
             </div>
           </div>
         </div>
