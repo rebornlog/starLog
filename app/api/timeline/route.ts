@@ -11,13 +11,17 @@ export interface TimelineEvent {
   author: string
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const limit = parseInt(searchParams.get('limit') || '100')
+    const offset = parseInt(searchParams.get('offset') || '0')
+    
     const repoPath = path.join(process.cwd())
     const git = simpleGit(repoPath)
     
-    // 获取最近 100 条提交记录
-    const log = await git.log({ maxCount: 100 })
+    // 获取提交记录（支持分页）
+    const log = await git.log({ maxCount: limit, from: `HEAD~${offset + limit}` })
     
     // 解析 Git 历史为时间线事件
     const events: TimelineEvent[] = log.all.map(commit => ({
@@ -29,9 +33,14 @@ export async function GET() {
       author: commit.author_name,
     }))
     
+    // 获取总数
+    const total = await git.raw(['rev-list', '--count', 'HEAD'])
+    
     return NextResponse.json({ 
       success: true,
       count: events.length,
+      total: parseInt(total.trim()),
+      hasMore: offset + events.length < parseInt(total.trim()),
       events 
     })
   } catch (error) {
