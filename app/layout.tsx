@@ -11,6 +11,7 @@ import SectionContainer from '@/components/SectionContainer'
 import Footer from '@/components/Footer'
 import { ToastProvider } from '@/components/Toast'
 import { LoadingProvider } from '@/components/LoadingContext'
+import SearchModal from '@/components/SearchModal'
 import siteMetadata from '@/data/siteMetadata'
 import { Metadata } from 'next'
 
@@ -100,13 +101,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <LoadingProvider>
           <ToastProvider>
-            <SectionContainer>
-              <div className="flex h-screen flex-col">
-                <Analytics analyticsConfig={siteMetadata.analytics} />
-                <Header />
-                <main className="mb-auto" id="main-content">{children}</main>
-              </div>
-            </SectionContainer>
+            <SearchProvider>
+              <SectionContainer>
+                <div className="flex h-screen flex-col">
+                  <Analytics analyticsConfig={siteMetadata.analytics} />
+                  <Header />
+                  <main className="mb-auto" id="main-content">{children}</main>
+                  <SearchModal />
+                </div>
+              </SectionContainer>
+            </SearchProvider>
           </ToastProvider>
         </LoadingProvider>
         <Footer />

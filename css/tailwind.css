@@ -207,3 +207,56 @@ code {
     text-decoration-color: currentColor;
   }
 }
+
+/* 移动端触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 增大点击区域 */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 移除 hover 效果，使用 active */
+  .hover\:shadow-lg:hover {
+    box-shadow: none;
+  }
+  
+  .hover\:-translate-y-1:hover {
+    transform: none;
+  }
+  
+  .hover\:scale-110:hover {
+    transform: none;
+  }
+  
+  /* 添加 active 效果 */
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.98);
+  }
+}
+
+/* 触摸反馈动画 */
+.touch-feedback {
+  transition: transform 0.1s ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.95);
+}
+
+/* 防止移动端双击缩放 */
+* {
+  touch-action: manipulation;
+}
+
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 移动端导航优化 */
+@media (max-width: 768px) {
+  nav {
+    -webkit-overflow-scrolling: touch;
+  }
+}
