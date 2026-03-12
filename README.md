@@ -1,221 +1,154 @@
-# 🚀 starLog - 个人知识库与金融分析平台
+# 🌿 starLog - 个人知识库
 
-> 📝 基于 Next.js 的全栈知识库系统 | 📈 集成 A 股实时行情 | 🎨 宫崎骏风格设计 | ⭐ 全新收藏功能
+> 像龙猫森林一样宁静的知识花园
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
-[![Stars](https://img.shields.io/github/stars/rebornlog/starLog?style=social)](https://github.com/rebornlog/starLog)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-3-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 
 ---
 
-## 🎯 5 分钟快速部署（傻瓜式教程）
+## 📖 项目简介
 
-### 前置要求
+starLog 是一个基于 Next.js 15 的个人知识库系统，集成技术博客、A 股行情、星座运势、易经问卦、能量饮食等功能。采用宫崎骏风格设计，记录技术的成长轨迹，探索生活的无限可能。
 
-- ✅ **Node.js 18+** ([下载地址](https://nodejs.org/))
-- ✅ **Git** ([下载地址](https://git-scm.com/))
-- ✅ **Redis** (可选，用于缓存)
-
-### 方式一：本地开发环境（推荐新手）
-
-#### 1️⃣ 克隆项目
-
-```bash
-# 克隆项目到本地
-git clone https://github.com/rebornlog/starLog.git
-
-# 进入项目目录
-cd starLog
-```
-
-#### 2️⃣ 安装依赖
-
-```bash
-# 使用 npm (推荐)
-npm install
-
-# 或使用 yarn
-yarn install
-```
-
-#### 3️⃣ 配置环境变量
-
-```bash
-# 复制环境变量示例文件
-cp .env.example .env.local
-
-# 编辑 .env.local 文件，填入你的配置
-# 至少需要配置数据库连接字符串
-```
-
-**最小化配置（仅数据库）**:
-```bash
-# 数据库连接（PostgreSQL）
-DATABASE_URL="postgresql://user:password@localhost:5432/starlog"
-
-# Redis（可选，用于缓存）
-REDIS_URL="redis://localhost:6379"
-```
-
-#### 4️⃣ 初始化数据库
-
-```bash
-# 安装 Prisma CLI
-npm install -g prisma
-
-# 生成 Prisma 客户端
-npx prisma generate
-
-# 执行数据库迁移
-npx prisma migrate deploy
-```
-
-#### 5️⃣ 启动开发服务器
-
-```bash
-# 启动开发服务器（自动热重载）
-npm run dev
-
-# 访问 http://localhost:3000
-```
-
-**🎉 完成！** 现在你可以访问 http://localhost:3000 查看项目了！
-
----
-
-### 方式二：Docker 一键部署（最简单）
-
-#### 1️⃣ 确保已安装 Docker
-
-```bash
-# 检查 Docker 是否安装
-docker --version
-
-# 检查 Docker Compose 是否安装
-docker-compose --version
-```
-
-#### 2️⃣ 克隆并启动
-
-```bash
-# 克隆项目
-git clone https://github.com/rebornlog/starLog.git
-cd starLog
-
-# 一键启动所有服务
-docker-compose up -d
-```
-
-**🎉 完成！** 访问 http://localhost:3000 即可。
-
-#### 3️⃣ 查看日志
-
-```bash
-# 查看所有服务日志
-docker-compose logs -f
-
-# 查看特定服务日志
-docker-compose logs -f app
-```
-
-#### 4️⃣ 停止服务
-
-```bash
-# 停止所有服务
-docker-compose down
-
-# 停止并删除数据卷（谨慎使用！）
-docker-compose down -v
-```
-
----
-
-### 方式三：生产环境部署
-
-#### 1️⃣ 构建生产版本
-
-```bash
-# 安装依赖
-npm install
-
-# 构建项目
-npm run build
-
-# 启动生产服务器
-npm start
-```
-
-#### 2️⃣ 使用 PM2 管理进程（推荐）
-
-```bash
-# 安装 PM2
-npm install -g pm2
-
-# 启动服务
-pm2 start npm --name "starlog" -- start
-
-# 查看状态
-pm2 status
-
-# 查看日志
-pm2 logs starlog
-
-# 设置开机自启
-pm2 startup
-pm2 save
-```
+**在线演示**: [http://47.79.20.10:3000](http://47.79.20.10:3000)
 
 ---
 
 ## ✨ 核心功能
 
-### 📝 知识库管理
-- ✅ Markdown 文章发布
-- ✅ 文件上传下载
-- ✅ PDF 导出
-- ✅ 分类标签管理
-- ✅ 全文检索
+### 📚 技术博客
+- Markdown/MDX 支持
+- 分类和标签管理
+- 文章目录导航
+- 阅读进度条
+- 代码语法高亮
+- Redis 缓存优化
 
-### 📈 金融数据分析
-- ✅ A 股实时行情
-- ✅ 市场概览
-- ✅ 股票搜索
-- ✅ 历史数据查询
-- ✅ 数据可视化
+### 📈 金融市场
+- A 股实时行情
+- 热门股票列表
+- 股票搜索和排序
+- K 线图展示
+- 技术指标（MA/MACD/RSI/KDJ）
+- 自选股管理
 
-### ☯️ 传统文化
-- ✅ 易经问卦（支持收藏 ⭐）
-- ✅ 星座运势（支持收藏 ⭐）
-- ✅ 能量饮食（支持收藏 ⭐）
-- ✅ 八字分析
+### ✨ 星座运势
+- 12 星座每日运势
+- 爱情/事业/财运/健康分析
+- 幸运颜色和数字
+- 今日宜忌
+- 算法生成（每日更新）
 
-### ⭐ 收藏功能（NEW！）
-- ✅ 一键收藏喜欢的内容
-- ✅ 收藏夹统一管理
-- ✅ 按类型筛选
-- ✅ LocalStorage 本地存储
-- ✅ 自动记录历史
+### ☯️ 易经问卦
+- 随机起卦（铜钱摇卦）
+- 时间起卦（基于时辰）
+- 数字起卦（用户输入）
+- 64 卦完整解卦
+- 变爻分析
 
-### 🎨 UI/UX
-- ✅ 宫崎骏风格设计
-- ✅ 响应式布局
-- ✅ 暗色模式
-- ✅ 中英文切换
-- ✅ 移动端优化
+### 🥗 能量饮食
+- 生辰八字分析
+- 五行强弱计算
+- 个性化饮食建议
+- 推荐/避免食物列表
+- 四季调养指南
+
+### 📅 大事纪
+- 项目发展历程
+- 重要里程碑
+- 时间轴展示
+- 分类统计
+
+---
+
+## 🎨 特色功能
+
+### 🌓 日夜主题切换
+- 自动保存用户偏好
+- 系统偏好检测
+- 平滑过渡动画
+- 全站深色模式支持
+
+### 🍞 面包屑导航
+- 自动识别页面层级
+- 响应式设计
+- 悬停高亮效果
+
+### 📸 自动化截图
+- Playwright 集成
+- 全页面截图
+- 批量页面审计
+- 自动生成报告
+
+### ⚡ 性能优化
+- Redis 缓存分级
+- 图片懒加载
+- 骨架屏加载动画
+- 代码分割
+- 缓存 TTL 优化
 
 ---
 
 ## 🛠️ 技术栈
 
-| 分类 | 技术 |
-|------|------|
-| **前端框架** | Next.js 15, React 18, TypeScript |
-| **样式** | Tailwind CSS, CSS Modules |
-| **状态管理** | React Hooks, LocalStorage |
-| **数据库** | PostgreSQL, Prisma ORM |
-| **缓存** | Redis |
-| **部署** | Docker, PM2 |
-| **API** | RESTful API |
+### 前端
+- **框架**: Next.js 15 (App Router)
+- **语言**: TypeScript 5
+- **样式**: Tailwind CSS 3
+- **组件**: React 19
+- **状态管理**: React Hooks
+
+### 后端
+- **API**: Next.js API Routes
+- **数据库**: PostgreSQL 15
+- **ORM**: Prisma 5
+- **缓存**: Redis 6
+- **金融数据**: 腾讯财经 API
+
+### 运维
+- **进程管理**: PM2
+- **部署**: Docker
+- **监控**: 自定义监控脚本
+
+---
+
+## 📦 快速开始
+
+### 环境要求
+- Node.js 18+
+- PostgreSQL 15+
+- Redis 6+
+- Python 3.8+ (金融 API)
+
+### 安装步骤
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/rebornlog/starLog.git
+cd starLog
+
+# 2. 安装依赖
+npm install
+
+# 3. 配置环境变量
+cp .env.local.example .env.local
+# 编辑 .env.local 配置数据库和 Redis
+
+# 4. 数据库迁移
+npx prisma migrate dev
+
+# 5. 启动开发服务器
+npm run dev
+
+# 6. 启动金融 API
+cd services/finance
+python -m uvicorn main:app --host 0.0.0.0 --port 8081
+```
+
+访问 http://localhost:3000
 
 ---
 
@@ -223,187 +156,65 @@ pm2 save
 
 ```
 starLog/
-├── app/                    # Next.js 15 App Router
-│   ├── blog/              # 博客页面
-│   ├── favorites/         # ⭐ 收藏夹页面（新增）
-│   ├── iching/            # 易经问卦
-│   ├── zodiac/            # 星座运势
-│   ├── diet/              # 能量饮食
-│   └── page.tsx           # 首页
-├── lib/                    # 工具函数
-│   ├── storage.ts         # ⭐ 收藏功能核心（新增）
-│   ├── redis.ts           # Redis 缓存
-│   ├── db.ts              # 数据库连接
+├── app/                      # Next.js 页面
+│   ├── blog/                 # 博客页面
+│   ├── stocks/               # 股票页面
+│   ├── zodiac/               # 星座页面
+│   ├── iching/               # 易经页面
+│   ├── diet/                 # 饮食页面
+│   ├── timeline/             # 大事纪页面
+│   └── page.tsx              # 首页
+├── components/               # React 组件
+│   ├── Header.tsx            # 导航栏（含主题切换）
+│   ├── Breadcrumb.tsx        # 面包屑导航
+│   ├── Skeleton.tsx          # 骨架屏组件
+│   ├── ThemeToggle.tsx       # 主题切换按钮
 │   └── ...
-├── components/             # React 组件
-├── prisma/                 # 数据库 Schema
-├── public/                 # 静态资源
-└── .env.local             # 环境变量配置
+├── lib/                      # 工具函数
+│   ├── redis.ts              # Redis 缓存
+│   ├── db.ts                 # 数据库连接
+│   └── cache-config.ts       # 缓存配置
+├── prisma/                   # 数据库 Schema
+├── services/finance/         # Python 金融服务
+├── scripts/                  # 工具脚本
+│   └── screenshot.js         # 自动化截图
+└── README.md                 # 项目文档
 ```
 
 ---
 
-## ⚙️ 环境变量配置
+## 📊 性能指标
 
-### 必需配置
-
-```bash
-# 数据库连接（PostgreSQL）
-DATABASE_URL="postgresql://用户名：密码@主机：端口/数据库名"
-
-# 示例：
-# DATABASE_URL="postgresql://postgres:123456@localhost:5432/starlog"
-```
-
-### 可选配置
-
-```bash
-# Redis 缓存
-REDIS_URL="redis://localhost:6379"
-
-# 应用配置
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_SITE_NAME="starLog"
-
-# 金融 API（如果使用外部服务）
-FINANCE_API_URL="http://localhost:8081"
-```
+| 指标 | 当前值 | 目标值 | 状态 |
+|------|--------|--------|------|
+| 首页加载 | 0.3s | <1s | ✅ |
+| 博客加载 | 0.8s | <1s | ✅ |
+| 股票加载 | 0.6s | <1s | ✅ |
+| 星座加载 | 0.7s | <1s | ✅ |
+| 缓存命中率 | 90% | >80% | ✅ |
 
 ---
 
-## 📖 使用指南
+## 🎯 开发计划
 
-### 1️⃣ 发布文章
+### P0 - 已完成 ✅
+- [x] 日夜主题切换
+- [x] 导航栏优化
+- [x] 面包屑导航
+- [x] 股票搜索功能
+- [x] 自动化截图
 
-1. 访问 `/blog` 页面
-2. 点击"新建文章"
-3. 使用 Markdown 编辑器编写
-4. 添加分类和标签
-5. 点击发布
+### P1 - 进行中 🚧
+- [ ] 骨架屏加载
+- [ ] 自定义 404 页面
+- [ ] 全局搜索（Cmd+K）
+- [ ] 移动端触摸优化
 
-### 2️⃣ 收藏内容
-
-1. 访问问卦/星座/饮食页面
-2. 点击 ⭐ 收藏按钮
-3. 访问 `/favorites` 查看收藏夹
-4. 可以筛选、删除收藏
-
-### 3️⃣ 查看股票行情
-
-1. 访问金融市场页面
-2. 搜索股票代码或名称
-3. 查看实时行情和历史数据
-
----
-
-## 🐛 常见问题
-
-### 1. 安装依赖失败
-
-```bash
-# 清理缓存
-npm cache clean --force
-rm -rf node_modules package-lock.json
-
-# 重新安装
-npm install
-```
-
-### 2. 数据库连接失败
-
-```bash
-# 检查 PostgreSQL 是否运行
-# Windows: 服务管理器
-# Mac: brew services list
-# Linux: systemctl status postgresql
-
-# 检查连接字符串是否正确
-# 格式：postgresql://user:password@host:port/database
-```
-
-### 3. 端口被占用
-
-```bash
-# 修改端口（在 .env.local 中）
-PORT=3001
-
-# 或查找占用端口的进程
-# Windows: netstat -ano | findstr :3000
-# Mac/Linux: lsof -i :3000
-```
-
-### 4. Redis 连接失败
-
-```bash
-# Redis 是可选的，没有 Redis 会使用数据库查询
-# 如需使用 Redis：
-
-# Mac
-brew install redis
-brew services start redis
-
-# Ubuntu
-sudo apt-get install redis-server
-sudo systemctl start redis
-
-# Windows
-# 下载：https://github.com/microsoftarchive/redis/releases
-```
-
-### 5. 构建失败
-
-```bash
-# 清理构建缓存
-rm -rf .next
-
-# 重新构建
-npm run build
-```
-
----
-
-## 🔧 开发命令
-
-```bash
-# 开发模式
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 启动生产服务器
-npm start
-
-# 代码检查
-npm run lint
-
-# 类型检查
-npm run type-check
-
-# 数据库操作
-npx prisma studio          # 打开数据库管理界面
-npx prisma migrate dev     # 开发环境迁移
-npx prisma migrate deploy  # 生产环境迁移
-npx prisma generate        # 生成 Prisma 客户端
-```
-
----
-
-## 📝 更新日志
-
-### v1.1.0 (2026-03-09) - ⭐ 收藏功能
-- ✨ 新增收藏功能核心
-- ✨ 新增收藏夹页面
-- ✨ 问卦/星座/饮食支持收藏
-- 🐛 修复按钮表单提交问题
-- ✅ 所有功能测试通过
-
-### v1.0.0 (2026-03-08) - 首发版本
-- ✨ 知识库管理
-- ✨ 金融数据分析
-- ✨ 易经问卦
-- ✨ 星座运势
-- ✨ 能量饮食
+### P2 - 计划中 📋
+- [ ] 评论系统（Giscus）
+- [ ] 页面过渡动画
+- [ ] Service Worker
+- [ ] CDN 部署
 
 ---
 
@@ -411,7 +222,7 @@ npx prisma generate        # 生成 Prisma 客户端
 
 欢迎提交 Issue 和 Pull Request！
 
-1. Fork 本项目
+1. Fork 项目
 2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
@@ -425,11 +236,11 @@ npx prisma generate        # 生成 Prisma 客户端
 
 ---
 
-## 📞 联系方式
+## 👨‍💻 作者
 
-- 📧 Email: 944183654@qq.com
-- 🌐 GitHub: [@rebornlog](https://github.com/rebornlog)
-- 💬 Issues: [GitHub Issues](https://github.com/rebornlog/starLog/issues)
+**老柱子**
+- GitHub: [@rebornlog](https://github.com/rebornlog)
+- Email: 944183654@qq.com
 
 ---
 
@@ -440,10 +251,10 @@ npx prisma generate        # 生成 Prisma 客户端
 - [Next.js](https://nextjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Prisma](https://www.prisma.io/)
-- [PostgreSQL](https://www.postgresql.org/)
+- [Playwright](https://playwright.dev/)
+- [AkShare](https://akshare.akfamily.xyz/)
 
 ---
 
-**🎉 享受使用 starLog！**
+**Made with ❤️ by 老柱子**
 
-如果这个项目对你有帮助，请给一个 ⭐ Star！
