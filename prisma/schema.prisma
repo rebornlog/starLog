@@ -1,5 +1,3 @@
-// Prisma Schema for starLog
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,44 +9,29 @@ datasource db {
 
 /// 博客文章
 model Post {
-  id          String   @id @default(cuid())
-  slug        String   @unique  // URL 路径，如：qps-optimization-guide
-  title       String
-  summary     String?  @db.Text
-  content     String   @db.Text  // Markdown 全文
-  excerpt     String?  @db.Text  // 摘要，用于列表页
-  coverImage  String?  // 封面图 URL
-  
-  // 分类和标签
-  category    String   @default("tech")  // tech, finance, fengshui, business
-  tags        String[]
-  
-  // 发布状态
-  isPublished Boolean  @default(false)
-  publishedAt DateTime?
-  
-  // 统计数据
-  viewCount   Int      @default(0)
-  likeCount   Int      @default(0)
-  commentCount Int     @default(0)
-  
-  // 阅读时间（分钟）
-  readingTime Int      @default(5)
-  
-  // SEO
-  metaTitle   String?
-  metaDesc    String?
-  keywords    String[]
-  
-  // 作者
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id])
-  
-  // 时间戳
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // 索引 - 支持高效查询和全文检索
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  summary      String?
+  content      String
+  excerpt      String?
+  coverImage   String?
+  category     String    @default("tech")
+  tags         String[]
+  isPublished  Boolean   @default(false)
+  publishedAt  DateTime?
+  viewCount    Int       @default(0)
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+  readingTime  Int       @default(5)
+  metaTitle    String?
+  metaDesc     String?
+  keywords     String[]
+  authorId     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  author       User      @relation(fields: [authorId], references: [id])
+
   @@index([category])
   @@index([tags])
   @@index([isPublished, publishedAt])
@@ -62,50 +45,39 @@ model User {
   name      String
   email     String   @unique
   avatar    String?
-  bio       String?  @db.Text
+  bio       String?
   website   String?
-  
-  // 关联文章
-  posts     Post[]
-  
-  // 时间戳
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+  posts     Post[]
+
   @@index([email])
 }
 
 /// 知识库文档
 model Document {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  summary     String?
-  content     String   @db.Text
-  excerpt     String?
-  coverImage  String?
-  tags        String[]
-  category    String?
-  isPublished Boolean  @default(false)
-  viewCount   Int      @default(0)
-  downloadCount Int    @default(0)
-  
-  // 文件信息
-  filePath    String?
-  fileSize    Int?     // bytes
-  fileType    String?  // mime type
-  
-  // SEO
-  metaTitle   String?
-  metaDesc    String?
-  keywords    String[]
-  
-  // 时间戳
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  publishedAt DateTime?
-  
-  // 全文搜索索引
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  summary       String?
+  content       String
+  excerpt       String?
+  coverImage    String?
+  tags          String[]
+  category      String?
+  isPublished   Boolean   @default(false)
+  viewCount     Int       @default(0)
+  downloadCount Int       @default(0)
+  filePath      String?
+  fileSize      Int?
+  fileType      String?
+  metaTitle     String?
+  metaDesc      String?
+  keywords      String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  publishedAt   DateTime?
+
   @@index([title])
   @@index([tags])
   @@index([category])
@@ -114,26 +86,20 @@ model Document {
 
 /// 金融数据缓存
 model StockData {
-  id        String   @id @default(cuid())
-  symbol    String
-  market    String   @default("US")  // US, CN, CRYPTO
-  
-  // 实时数据
-  price     Float?
-  change    Float?
+  id            String   @id @default(cuid())
+  symbol        String
+  market        String   @default("US")
+  price         Float?
+  change        Float?
   changePercent Float?
-  high      Float?
-  low       Float?
-  open      Float?
+  high          Float?
+  low           Float?
+  open          Float?
   previousClose Float?
-  volume    BigInt?
-  
-  // 时间序列数据 (JSON 存储 K 线)
-  candles   Json?    // [{t, o, h, l, c, v}]
-  
-  // 更新时间
-  updatedAt DateTime @updatedAt
-  
+  volume        BigInt?
+  candles       Json?
+  updatedAt     DateTime @updatedAt
+
   @@unique([symbol, market])
   @@index([symbol])
   @@index([market])
@@ -141,14 +107,14 @@ model StockData {
 
 /// 技术分析指标
 model TechnicalIndicator {
-  id        String   @id @default(cuid())
-  symbol    String
-  type      String   // MA, MACD, RSI, Bollinger
-  period    String   // 1d, 1h, 15m
-  parameters Json    // { period: 20, etc }
-  values    Json     // 指标值
+  id           String   @id @default(cuid())
+  symbol       String
+  type         String
+  period       String
+  parameters   Json
+  values       Json
   calculatedAt DateTime @default(now())
-  
+
   @@index([symbol, type])
 }
 
@@ -161,7 +127,7 @@ model Bookmark {
   notes     String?
   isPublic  Boolean  @default(false)
   createdAt DateTime @default(now())
-  
+
   @@index([tags])
 }
 

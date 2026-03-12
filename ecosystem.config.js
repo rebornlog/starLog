@@ -1,0 +1,35 @@
+module.exports = {
+  apps: [
+    {
+      name: 'starLog-frontend',
+      cwd: '/home/admin/.openclaw/workspace/starLog',
+      script: 'npm',
+      args: 'run dev',
+      env: {
+        NODE_ENV: 'development',
+        DATABASE_URL: 'postgresql://starlog:starlog123@localhost:5432/starlog?connection_limit=10',
+        REDIS_URL: 'redis://localhost:6379',
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      error_file: '/tmp/pm2-frontend-error.log',
+      out_file: '/tmp/pm2-frontend-out.log',
+      merge_logs: true,
+    },
+    {
+      name: 'starLog-finance',
+      cwd: '/home/admin/.openclaw/workspace/starLog/services/finance',
+      script: 'venv/bin/python',
+      args: '-m uvicorn main:app --host 0.0.0.0 --port 8081',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      error_file: '/tmp/pm2-finance-error.log',
+      out_file: '/tmp/pm2-finance-out.log',
+      merge_logs: true,
+    },
+  ],
+};

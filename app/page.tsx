@@ -2,65 +2,13 @@ import Link from 'next/link'
 import { PrismaClient } from '@prisma/client'
 import { getCachedRecentPosts, setCachedRecentPosts } from '@/lib/redis'
 import { Metadata } from 'next'
-import { SkeletonCard } from '@/components/Skeleton'
+import Breadcrumb from '@/components/Breadcrumb'
 
 const prisma = new PrismaClient()
 
-// SEO 元数据
 export const metadata: Metadata = {
   title: 'starLog - 个人知识库 | 技术博客·星座运势·易经问卦·能量饮食',
   description: 'starLog 是一个基于 Next.js 的个人知识库系统，集成技术博客、A 股行情、星座运势、易经问卦、能量饮食等功能。宫崎骏风格设计，记录技术的成长轨迹，探索生活的无限可能。',
-  keywords: ['starLog', '个人知识库', '技术博客', '星座运势', '易经问卦', '能量饮食', 'Next.js', 'React', 'TypeScript'],
-  authors: [{ name: '水镜先生' }],
-  creator: '水镜先生',
-  publisher: 'starLog',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL('https://starlog.com'),
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    title: 'starLog - 个人知识库',
-    description: '像龙猫森林一样宁静的知识花园',
-    url: 'https://starlog.com',
-    siteName: 'starLog',
-    locale: 'zh_CN',
-    type: 'website',
-    images: [
-      {
-        url: '/static/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'starLog - 个人知识库',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'starLog - 个人知识库',
-    description: '像龙猫森林一样宁静的知识花园',
-    creator: '@starlog',
-    images: ['/static/og-image.jpg'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
-  },
 }
 
 interface Post {
@@ -75,17 +23,14 @@ interface Post {
   viewCount: number
 }
 
-// 服务端获取最新文章（带 Redis 缓存）
 async function getRecentPosts() {
   try {
-    // 1. 先查 Redis 缓存
     const cached = await getCachedRecentPosts(3)
     if (cached) {
       console.log('✅ 首页文章：Redis 缓存命中')
       return cached
     }
 
-    // 2. 缓存未命中，查数据库
     console.log('⏳ 首页文章：查询数据库...')
     const posts = await prisma.post.findMany({
       where: { isPublished: true },
@@ -104,7 +49,6 @@ async function getRecentPosts() {
       },
     })
 
-    // 3. 写入 Redis 缓存（5 分钟）
     if (posts.length > 0) {
       await setCachedRecentPosts(posts, 3)
       console.log('✅ 首页文章：已缓存到 Redis')
@@ -122,7 +66,6 @@ async function getRecentPosts() {
 export default async function Home() {
   const recentPosts = await getRecentPosts()
 
-  // 功能卡片配置
   const featureCards = [
     {
       icon: '📚',
@@ -142,8 +85,8 @@ export default async function Home() {
       borderColor: 'border-blue-200 dark:border-blue-800',
       textColor: 'text-blue-800 dark:text-blue-200',
       linkColor: 'text-blue-600 dark:text-blue-400',
-      href: 'http://47.79.20.10:8081/stocks/popular',
-      external: true,
+      href: '/stocks',
+      external: false,
     },
     {
       icon: '✨',
@@ -177,10 +120,9 @@ export default async function Home() {
     },
   ]
 
-  // 主题标签
   const topics = [
     { icon: '📚', name: '技术', href: '/blog?category=tech' },
-    { icon: '📈', name: '金融', href: '/blog?category=finance' },
+    { icon: '📈', name: '金融', href: '/stocks/' },
     { icon: '✨', name: '星座', href: '/zodiac' },
     { icon: '☯', name: '问卦', href: '/iching' },
     { icon: '🥗', name: '饮食', href: '/diet' },
@@ -201,11 +143,14 @@ export default async function Home() {
       {/* 主内容区域 */}
       <main className="min-h-screen pb-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          {/* 面包屑导航 */}
+          <Breadcrumb />
+          
           {/* 宫崎骏风格标题区域 */}
-          <div className="text-center mb-6 sm:mb-8 relative">
-            {/* 装饰性云朵 - 仅桌面端显示，使用 CSS 动画 */}
-            <div className="hidden md:block absolute -top-8 -left-8 text-6xl opacity-60 animate-cloud-float" />
-            <div className="hidden md:block absolute -top-12 -right-12 text-5xl opacity-40 animate-cloud-float-slow" />
+          <div className="text-center mb-8 sm:mb-12 relative">
+            {/* 装饰性云朵 */}
+            <div className="hidden md:block absolute -top-8 -left-8 text-6xl opacity-60 animate-cloud-float">☁️</div>
+            <div className="hidden md:block absolute -top-12 -right-12 text-5xl opacity-40 animate-cloud-float-slow">☁️</div>
             
             {/* 主标题 */}
             <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-8xl font-bold mb-3 sm:mb-4 relative z-10">
@@ -214,7 +159,7 @@ export default async function Home() {
               </span>
             </h1>
             
-            {/* 装饰性植物 - 移动端简化 */}
+            {/* 装饰性植物 */}
             <div className="flex justify-center gap-1 sm:gap-2 text-2xl sm:text-3xl mb-3 sm:mb-4">
               <span className="animate-plant-sway">🌱</span>
               <span className="animate-plant-sway-delay-1">🌿</span>
@@ -236,13 +181,13 @@ export default async function Home() {
             每一篇笔记都是一颗种子，终将长成参天大树
           </p>
 
-          {/* 主题标签导航 - 移动端优化 */}
+          {/* 主题标签导航 */}
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8 sm:mb-12">
             {topics.map((topic) => (
               <Link
                 key={topic.name}
                 href={topic.href}
-                className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-gray-800 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
+                className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-gray-800 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700"
               >
                 <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform duration-300">{topic.icon}</span>
                 <span className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300">{topic.name}</span>
@@ -250,7 +195,7 @@ export default async function Home() {
             ))}
           </div>
 
-          {/* 功能卡片 - 移动端单列，桌面端双列 */}
+          {/* 功能卡片 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16">
             {featureCards.map((card) => (
               <Link
@@ -272,7 +217,7 @@ export default async function Home() {
             ))}
           </div>
 
-          {/* 最新文章预览 - 服务端渲染 */}
+          {/* 最新文章预览 */}
           <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-amber-200 dark:border-amber-800 shadow-inner mb-12 sm:mb-16">
             <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -332,7 +277,7 @@ export default async function Home() {
             )}
           </div>
 
-          {/* 关于我 - 移动端优化 */}
+          {/* 关于我 */}
           <div className="bg-gradient-to-r from-pink-50 via-rose-50 to-red-50 dark:from-pink-900/20 dark:via-rose-900/20 dark:to-red-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-pink-200 dark:border-pink-800 shadow-inner mb-12 sm:mb-16">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <span className="text-2xl sm:text-3xl">👤</span>
@@ -371,7 +316,7 @@ export default async function Home() {
                 </p>
               </div>
             </div>
-            {/* 社交链接 - 移动端堆叠 */}
+            {/* 社交链接 */}
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
               <a
                 href="https://github.com/rebornlog"
