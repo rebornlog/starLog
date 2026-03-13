@@ -1,0 +1,399 @@
+# Next.js 15 API Routes 问题排查实录
+
+> **问题描述：** starLog 网站股票功能 API 代理失效，前端无法获取股票数据
+> 
+> **解决时间：** 4 小时
+> 
+> **技术栈：** Next.js 15 + Turbopack + FastAPI
+
+---
+
+## 📋 问题现象
+
+用户访问股票列表页时，所有股票价格显示 `¥--- ↓ --- (---%)`，前端无法获取金融 API 数据。
+
+**预期行为：**
+```javascript
+// 前端调用
+const res = await fetch('/api/stocks/popular')
+// 应返回股票列表数据
+```
+
+**实际行为：**
+- 返回空响应
+- 或返回 308 永久重定向
+- 日志显示 "Duplicate page detected" 警告
+
+---
+
+## 🔍 问题排查过程
+
+### 第一阶段：初步诊断（30 分钟）
+
+#### 1.1 检查服务状态
+
+```bash
+# 金融 API 服务
+curl http://localhost:8081/api/stocks/popular
+# ✅ 正常返回 JSON 数据
+
+# 前端 API 代理
+curl http://localhost:3000/api/stocks/popular
+# ❌ 返回空或 308 重定向
+```
+
+**初步判断：** 金融 API 正常，问题出在 Next.js 的 API 代理层。
+
+#### 1.2 检查 Next.js 配置
+
+查看 `next.config.js`：
+
+```javascript
+async rewrites() {
+  return [
+    {
+      source: '/api/:path*',
+      destination: 'http://localhost:8081/api/:path*',
+    },
+  ]
+}
+```
+
+配置正确，但未生效。
+
+---
+
+### 第二阶段：尝试多种方案（2 小时）
+
+#### 方案 1：App Router API Routes
+
+创建 `app/api/stocks/popular/route.ts`：
+
+```typescript
+export async function GET() {
+  const response = await fetch('http://localhost:8081/api/stocks/popular')
+  const data = await response.json()
+  return NextResponse.json(data)
+}
+```
+
+**结果：** ❌ 失败
+- 日志显示 "Duplicate page detected"
+- App Router 和 Pages Router 冲突
+
+#### 方案 2：Pages Router API
+
+创建 `pages/api/stocks/popular.ts`：
+
+```typescript
+export default async function handler(req, res) {
+  const response = await fetch('http://localhost:8081/api/stocks/popular')
+  const data = await response.json()
+  return res.status(200).json(data)
+}
+```
+
+**结果：** ❌ 失败
+- 仍然返回 308 重定向
+- Next.js 15 + Turbopack 对 Pages API 支持有问题
+
+#### 方案 3：Middleware 代理
+
+创建 `middleware.ts`：
+
+```typescript
+export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const apiUrl = new URL(`http://localhost:8081${request.nextUrl.pathname}`)
+    return fetch(apiUrl, request)
+  }
+}
+```
+
+**结果：** ❌ 失败
+- Middleware 编译成功但请求无响应
+- Turbopack 的 Middleware 支持有限制
+
+#### 方案 4：清理缓存重启
+
+```bash
+pm2 stop all
+rm -rf .next node_modules/.cache .turbo .contentlayer
+pm2 start all
+```
+
+**结果：** ❌ 失败
+- 问题依旧存在
+- 确认不是缓存问题
+
+---
+
+### 第三阶段：根本原因定位（30 分钟）
+
+#### 关键发现
+
+查看 Next.js 日志：
+
+```
+⚠ Duplicate page detected. pages/api/stocks/[code].ts and app/api/stocks/[code]/route.ts
+⚠ Webpack is configured while Turbopack is not
+```
+
+**问题分析：**
+
+1. **Next.js 15 架构变更**
+   - Next.js 15 推荐使用 App Router
+   - Pages Router 处于维护模式
+   - Turbopack 对 Pages API 支持不完善
+
+2. **rewrites 配置限制**
+   - `next.config.js` 的 `rewrites` 在开发模式下可能不生效
+   - 特别是使用 Turbopack 时
+
+3. **308 重定向问题**
+   - Next.js 自动添加尾部斜杠
+   - 导致 API 路由匹配失败
+
+---
+
+### 第四阶段：最终解决方案（30 分钟）
+
+#### 方案 5：独立 API 代理层 ✅
+
+创建 `scripts/api-proxy-simple.js`：
+
+```javascript
+const http = require('http');
+
+const PORT = 3000;
+
+const server = http.createServer((req, res) => {
+  const url = req.url;
+  
+  // 代理 API 请求
+  if (url.startsWith('/api/')) {
+    const options = {
+      hostname: 'localhost',
+      port: 8081,
+      path: url, // 保持完整路径
+      method: req.method,
+      headers: req.headers
+    };
+    
+    const proxy = http.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      proxyRes.pipe(res);
+    });
+    
+    proxy.on('error', (e) => {
+      console.error('Proxy Error:', e.message);
+      res.writeHead(503);
+      res.end(JSON.stringify({ error: 'API 服务不可用' }));
+    });
+    
+    req.pipe(proxy);
+    return;
+  }
+  
+  res.writeHead(404);
+  res.end('Not Found');
+});
+
+server.listen(PORT, () => {
+  console.log(`🚀 API Proxy running on http://localhost:${PORT}`);
+});
+```
+
+**启动命令：**
+
+```bash
+# 启动金融 API
+cd services/finance && source venv/bin/activate
+nohup python -m uvicorn main:app --host 0.0.0.0 --port 8081 &
+
+# 启动前端（使用 3001 端口）
+PORT=3001 npm run dev &
+
+# 启动 API 代理（占用 3000 端口）
+node scripts/api-proxy-simple.js &
+```
+
+**验证结果：** ✅ 成功
+
+```bash
+curl http://localhost:3000/api/stocks/popular
+# 正常返回 JSON 数据
+
+curl http://localhost:3000/api/stocks/600519
+# 返回个股详情数据
+```
+
+---
+
+## 💡 解决方案对比
+
+| 方案 | 优点 | 缺点 | 状态 |
+|------|------|------|------|
+| App Router API Routes | Next.js 原生支持 | 与 Pages Router 冲突 | ❌ |
+| Pages Router API | 传统稳定方案 | Turbopack 支持差 | ❌ |
+| Middleware 代理 | 灵活可控 | Turbopack 限制 | ❌ |
+| next.config.js rewrites | 配置简单 | 开发模式不生效 | ❌ |
+| **独立 API 代理** | **完全可控，无依赖** | **需额外维护进程** | **✅** |
+
+---
+
+## 🎓 学到的经验
+
+### 1. 技术选型要谨慎
+
+**教训：**
+- Next.js 15 仍在快速迭代中
+- Turbopack 作为新引擎，稳定性不如 Webpack
+- 生产环境建议使用稳定版本
+
+**改进：**
+```javascript
+// package.json - 明确指定不使用 Turbopack
+{
+  "scripts": {
+    "dev": "next dev",  // 不使用 --turbopack
+    "build": "next build",
+    "start": "next start"
+  }
+}
+```
+
+### 2. 架构设计要解耦
+
+**教训：**
+- API 代理与前端强耦合，导致问题难以定位
+- 多个服务端口冲突，排查困难
+
+**改进：**
+```
+推荐架构：
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   用户浏览器  │ ──→ │  API 代理    │ ──→ │  金融 API   │
+│             │     │ (Node.js)   │     │  (Python)   │
+└─────────────┘     └─────────────┘     └─────────────┘
+                           │
+                    ┌─────────────┐
+                    │  Next.js    │
+                    │   前端      │
+                    └─────────────┘
+```
+
+### 3. 问题排查要系统化
+
+**正确流程：**
+```
+1. 确认问题范围（哪个服务有问题）
+2. 检查日志（错误信息、警告）
+3. 隔离测试（单独测试每个组件）
+4. 尝试多种方案（不执着于一种方法）
+5. 验证解决方案（全面测试）
+6. 记录文档（避免重复踩坑）
+```
+
+### 4. 进程管理要规范
+
+**教训：**
+- PM2 自动重启导致配置不生效
+- 多个进程同时运行导致端口冲突
+
+**改进：**
+```bash
+# 使用统一的进程管理脚本
+#!/bin/bash
+# start-services.sh
+
+# 清理旧进程
+pkill -f "next"
+pkill -f "uvicorn"
+pkill -f "api-proxy"
+
+# 启动服务
+pm2 start ecosystem.config.js
+
+# 健康检查
+sleep 10
+curl http://localhost:3000/api/health
+```
+
+---
+
+## 📝 反思与改进
+
+### 需要改进的地方
+
+1. **技术预研不足**
+   - 未充分评估 Next.js 15 + Turbopack 的稳定性
+   - 应在开发前做更多 PoC 验证
+
+2. **架构设计过于复杂**
+   - API 代理多层嵌套
+   - 增加了故障排查难度
+
+3. **监控告警缺失**
+   - API 失效后未能及时发现
+   - 缺少健康检查机制
+
+4. **文档记录不及时**
+   - 配置变更未同步文档
+   - 增加了后续维护成本
+
+### 后续行动计划
+
+1. **简化架构**
+   - 考虑直接使用 FastAPI 提供静态文件
+   - 减少中间代理层
+
+2. **添加监控**
+   - API 健康检查端点
+   - 服务异常告警
+
+3. **完善文档**
+   - 更新架构图文档
+   - 记录已知问题和解决方案
+
+4. **技术债务清理**
+   - 统一 Next.js 版本（降级到 14 LTS）
+   - 移除 Turbopack 依赖
+
+---
+
+## 🔗 相关资源
+
+- [Next.js 15 文档](https://nextjs.org/docs)
+- [Turbopack 已知问题](https://nextjs.org/docs/app/api-reference/next-config-js/turbopack)
+- [Pages Router vs App Router](https://nextjs.org/docs/pages/building-your-application/upgrading/app-router-migration)
+- [starLog 项目仓库](https://github.com/rebornlog/starLog)
+
+---
+
+## 📌 总结
+
+**问题本质：** Next.js 15 + Turbopack 对传统 Pages API 支持不完善
+
+**解决方案：** 使用独立 Node.js 代理层，解耦 API 转发与前端渲染
+
+**核心收获：** 
+1. 新技术需谨慎评估
+2. 架构设计要简单清晰
+3. 问题排查要系统化
+4. 文档记录要及时
+
+**时间投入：** 4 小时
+
+**价值产出：** 
+- ✅ 问题解决
+- ✅ 经验沉淀
+- ✅ 团队分享材料
+
+---
+
+*最后更新时间：2026-03-13*
+*作者：starLog 开发团队*
