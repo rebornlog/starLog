@@ -35,6 +35,15 @@ starLog 是一个基于 Next.js 15 的个人知识库系统，集成技术博客
 - 技术指标（MA/MACD/RSI/KDJ）
 - 自选股管理
 
+### 💰 基金理财
+- 热门基金列表（31 只精选）
+- 基金详情页（实时净值/历史业绩）
+- 天天基金实时数据接入
+- 历史净值图表（lightweight-charts）
+- 持仓分布展示（资产配置/前十大持仓/行业分布）
+- 基金导入/导出功能
+- 45 分钟 Redis 缓存策略
+
 ### ✨ 星座运势
 - 12 星座每日运势
 - 爱情/事业/财运/健康分析
@@ -90,6 +99,13 @@ starLog 是一个基于 Next.js 15 的个人知识库系统，集成技术博客
 - 代码分割
 - 缓存 TTL 优化
 
+### 🔧 服务管理
+- PM2 进程守护
+- 开机自启配置
+- 健康监控脚本
+- 日志管理
+- 多服务统一管理
+
 ---
 
 ## 🛠️ 技术栈
@@ -102,11 +118,12 @@ starLog 是一个基于 Next.js 15 的个人知识库系统，集成技术博客
 - **状态管理**: React Hooks
 
 ### 后端
-- **API**: Next.js API Routes
+- **API**: Next.js API Routes + FastAPI
 - **数据库**: PostgreSQL 15
 - **ORM**: Prisma 5
 - **缓存**: Redis 6
-- **金融数据**: 腾讯财经 API
+- **金融数据**: 腾讯财经 API + 天天基金 API
+- **图表**: lightweight-charts 5
 
 ### 运维
 - **进程管理**: PM2
@@ -143,12 +160,33 @@ npx prisma migrate dev
 # 5. 启动开发服务器
 npm run dev
 
-# 6. 启动金融 API
+# 6. 启动金融 API（使用 PM2）
+pm2 start ecosystem.config.js
+
+# 或手动启动
 cd services/finance
 python -m uvicorn main:app --host 0.0.0.0 --port 8081
+python -m uvicorn fund_api:app --host 0.0.0.0 --port 8082
 ```
 
 访问 http://localhost:3000
+
+### PM2 管理
+
+```bash
+# 查看所有服务
+pm2 list
+
+# 重启服务
+pm2 restart all
+
+# 查看日志
+pm2 logs
+
+# 保存服务列表（开机自启）
+pm2 save
+pm2 startup
+```
 
 ---
 
@@ -159,6 +197,11 @@ starLog/
 ├── app/                      # Next.js 页面
 │   ├── blog/                 # 博客页面
 │   ├── stocks/               # 股票页面
+│   ├── funds/                # 基金页面（新增）
+│   │   ├── page.tsx          # 基金列表页
+│   │   ├── [code]/page.tsx   # 基金详情页
+│   │   ├── import/page.tsx   # 导入页面
+│   │   └── export/page.tsx   # 导出页面
 │   ├── zodiac/               # 星座页面
 │   ├── iching/               # 易经页面
 │   ├── diet/                 # 饮食页面
@@ -169,15 +212,30 @@ starLog/
 │   ├── Breadcrumb.tsx        # 面包屑导航
 │   ├── Skeleton.tsx          # 骨架屏组件
 │   ├── ThemeToggle.tsx       # 主题切换按钮
+│   ├── FundChart.tsx         # 基金图表组件（新增）
+│   └── ...
+├── data/                     # 静态数据
+│   ├── funds.ts              # 基金数据（新增）
 │   └── ...
 ├── lib/                      # 工具函数
 │   ├── redis.ts              # Redis 缓存
 │   ├── db.ts                 # 数据库连接
 │   └── cache-config.ts       # 缓存配置
 ├── prisma/                   # 数据库 Schema
-├── services/finance/         # Python 金融服务
+├── services/                 # 后端服务
+│   ├── finance/              # 金融服务
+│   │   ├── main.py           # 股票 API
+│   │   ├── fund_api.py       # 基金 API（新增）
+│   │   ├── fund_routes.py    # 基金路由（新增）
+│   │   └── venv/             # Python 虚拟环境
+│   ├── data/                 # 数据服务
+│   │   └── funds.py          # 基金静态数据（新增）
+│   └── tiantian_fund.py      # 天天基金 API（新增）
 ├── scripts/                  # 工具脚本
-│   └── screenshot.js         # 自动化截图
+│   ├── screenshot.js         # 自动化截图
+│   ├── health-check.sh       # 健康监控（新增）
+│   └── 36kr-daily.sh         # 36kr 日报推送
+├── ecosystem.config.js       # PM2 配置（新增）
 └── README.md                 # 项目文档
 ```
 
@@ -203,8 +261,13 @@ starLog/
 - [x] 面包屑导航
 - [x] 股票搜索功能
 - [x] 自动化截图
+- [x] 基金板块（列表/详情/图表）
+- [x] PM2 服务管理
+- [x] 健康监控脚本
 
 ### P1 - 进行中 🚧
+- [ ] 基金对比功能
+- [ ] 定投计算器
 - [ ] 骨架屏加载
 - [ ] 自定义 404 页面
 - [ ] 全局搜索（Cmd+K）
