@@ -13,6 +13,13 @@ const prisma = new PrismaClient()
 const milestoneEvents = [
   {
     date: '2026-03-17',
+    title: '基金对比和定投计算器上线',
+    description: '支持 2-5 只基金对比、自定义定投计算器、收益走势图、详细数据表，P1 任务全部完成',
+    type: 'feature',
+    emoji: '📊',
+  },
+  {
+    date: '2026-03-17',
     title: '基金板块完整功能上线',
     description: '基金列表/详情页、实时净值 API、历史业绩图表、持仓分布展示，PM2 统一管理所有服务',
     type: 'feature',
