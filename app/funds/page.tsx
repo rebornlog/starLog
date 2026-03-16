@@ -12,6 +12,8 @@ const API_BASE = 'http://47.79.20.10:8082'
 
 export default function FundsPage() {
   const [funds, setFunds] = useState<Fund[]>([])
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareList, setCompareList] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
@@ -137,6 +139,26 @@ export default function FundsPage() {
           <p className="text-gray-600 dark:text-gray-300">
             实时净值更新 {lastUpdate && `· 最后更新：${lastUpdate}`}
           </p>
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setCompareMode(!compareMode)}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                compareMode
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              📊 {compareMode ? '取消对比' : '基金对比'}
+            </button>
+            {compareMode && compareList.length > 0 && (
+              <Link
+                href={`/funds/compare?${compareList.map(c => `codes=${c}`).join('&')}`}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+              >
+                开始对比 ({compareList.length}只)
+              </Link>
+            )}
+          </div>
           <div className="mt-2 flex items-center justify-center gap-4">
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <input
@@ -271,6 +293,12 @@ export default function FundsPage() {
             >
               📤 导出
             </Link>
+            <Link
+              href="/funds/sip-calculator"
+              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+            >
+              💰 定投计算器
+            </Link>
           </div>
         </div>
 
@@ -293,11 +321,31 @@ export default function FundsPage() {
             </div>
           ) : (
             filteredFunds.map(fund => (
-              <Link
+              <div
                 key={fund.code}
-                href={`/funds/${fund.code}`}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all p-5 border border-gray-200 dark:border-gray-700"
+                className={`bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all p-5 border border-gray-200 dark:border-gray-700 ${
+                  compareMode ? 'cursor-pointer' : ''
+                }`}
+                onClick={(e) => {
+                  if (compareMode) {
+                    e.preventDefault()
+                    if (compareList.includes(fund.code)) {
+                      setCompareList(compareList.filter(c => c !== fund.code))
+                    } else {
+                      if (compareList.length >= 5) {
+                        alert('最多只能对比 5 只基金')
+                        return
+                      }
+                      setCompareList([...compareList, fund.code])
+                    }
+                  }
+                }}
               >
+                <Link
+                  href={`/funds/${fund.code}`}
+                  onClick={(e) => compareMode && e.preventDefault()}
+                  className="block"
+                >
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="font-bold text-lg text-gray-900 dark:text-white">
@@ -335,7 +383,35 @@ export default function FundsPage() {
                     <span className="text-gray-900 dark:text-white">{fund.type}</span>
                   </div>
                 </div>
-              </Link>
+                </Link>
+                
+                {/* 对比模式复选框 */}
+                {compareMode && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (compareList.includes(fund.code)) {
+                          setCompareList(compareList.filter(c => c !== fund.code))
+                        } else {
+                          if (compareList.length >= 5) {
+                            alert('最多只能对比 5 只基金')
+                            return
+                          }
+                          setCompareList([...compareList, fund.code])
+                        }
+                      }}
+                      className={`w-full py-2 rounded-lg transition-colors text-sm font-medium ${
+                        compareList.includes(fund.code)
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {compareList.includes(fund.code) ? '✓ 已选择' : '+ 添加对比'}
+                    </button>
+                  </div>
+                )}
+              </div>
             ))
           )}
         </div>
