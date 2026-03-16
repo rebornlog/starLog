@@ -12,6 +12,20 @@ const prisma = new PrismaClient()
 // 项目里程碑事件（静态）
 const milestoneEvents = [
   {
+    date: '2026-03-17',
+    title: '基金板块完整功能上线',
+    description: '基金列表/详情页、实时净值 API、历史业绩图表、持仓分布展示，PM2 统一管理所有服务',
+    type: 'feature',
+    emoji: '💰',
+  },
+  {
+    date: '2026-03-17',
+    title: '服务架构优化',
+    description: '修复 finance-api 导入路径问题，配置阿里云安全组，实现 8081/8082 端口外部访问',
+    type: 'devops',
+    emoji: '🔧',
+  },
+  {
     date: '2026-03-12',
     title: 'UI/UX 全面优化',
     description: '完成日夜主题切换、导航栏优化、面包屑导航、股票搜索功能',
