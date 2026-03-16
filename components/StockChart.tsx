@@ -85,7 +85,7 @@ export default function StockChart({ code, timeframe }: StockChartProps) {
     if (!chartContainerRef.current) return
 
     // 创建图表
-    const chart = createChart(chartContainerRef.current, {
+    const chart: IChartApi = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: 400,
       layout: {
@@ -102,7 +102,7 @@ export default function StockChart({ code, timeframe }: StockChartProps) {
       },
     })
 
-    // 创建 K 线系列
+    // 创建 K 线系列 - lightweight-charts 5.x API
     const candleSeries = chart.addCandlestickSeries({
       upColor: '#ef4444',
       downColor: '#22c55e',

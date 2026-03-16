@@ -1,0 +1,325 @@
+---
+title: 'Java 多线程实战：从理论到生产'
+date: '2026-03-14'
+tags: ['Java', '多线程', '并发', '线程池']
+category: tech
+summary: 'Java 多线程开发避坑指南，涵盖线程池参数调优、锁机制选择、并发容器使用等实战经验'
+draft: false
+---
+
+## 问题背景
+
+在生产环境中，多线程编程是最容易出问题的领域之一。线程泄漏、死锁、竞态条件等问题轻则导致性能下降，重则引发系统崩溃。
+
+本文基于我在生产环境遇到的真实问题，总结 Java 多线程开发的核心要点和避坑指南。
+
+## 线程池参数调优
+
+### 错误示范
+
+```java
+// ❌ 不要这样创建线程池
+ExecutorService executor = Executors.newFixedThreadPool(10);
+ExecutorService executor2 = Executors.newCachedThreadPool();
+```
+
+**问题分析：**
+- `newFixedThreadPool` 和 `newCachedThreadPool` 的队列长度都是 `Integer.MAX_VALUE`
+- 可能导致 OOM（OutOfMemoryError）
+- 无法有效控制资源
+
+### 正确做法
+
+```java
+// ✅ 使用 ThreadPoolExecutor 手动创建
+ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    8,                          // corePoolSize: 核心线程数
+    16,                         // maximumPoolSize: 最大线程数
+    60L,                        // keepAliveTime: 空闲线程存活时间
+    TimeUnit.SECONDS,           // 时间单位
+    new ArrayBlockingQueue<>(100), // 工作队列
+    new ThreadPoolExecutor.CallerRunsPolicy() // 拒绝策略
+);
+```
+
+### 参数设置建议
+
+| 场景 | 核心线程数 | 最大线程数 | 队列大小 |
+|------|-----------|-----------|---------|
+| CPU 密集型 | CPU 核数 | CPU 核数 * 2 | 50-100 |
+| IO 密集型 | CPU 核数 * 2 | CPU 核数 * 4 | 100-200 |
+| 混合型 | CPU 核数 * 1.5 | CPU 核数 * 3 | 100 |
+
+## 锁机制选择
+
+### synchronized vs ReentrantLock
+
+```java
+// synchronized - 简单场景
+public synchronized void increment() {
+    count++;
+}
+
+// ReentrantLock - 需要高级功能时
+private final ReentrantLock lock = new ReentrantLock();
+
+public void increment() {
+    lock.lock();
+    try {
+        count++;
+    } finally {
+        lock.unlock(); // 必须在 finally 中释放
+    }
+}
+```
+
+### 读写锁优化
+
+```java
+// 读多写少的场景使用 ReadWriteLock
+private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+public Data read() {
+    rwLock.readLock().lock();
+    try {
+        return data;
+    } finally {
+        rwLock.readLock().unlock();
+    }
+}
+
+public void write(Data newData) {
+    rwLock.writeLock().lock();
+    try {
+        this.data = newData;
+    } finally {
+        rwLock.writeLock().unlock();
+    }
+}
+```
+
+## 并发容器使用
+
+### ConcurrentHashMap
+
+```java
+// ❌ 错误：在迭代时修改
+for (String key : map.keySet()) {
+    if (shouldRemove(key)) {
+        map.remove(key); // ConcurrentModificationException
+    }
+}
+
+// ✅ 正确：使用迭代器的 remove 方法
+Iterator<String> iterator = map.keySet().iterator();
+while (iterator.hasNext()) {
+    if (shouldRemove(iterator.next())) {
+        iterator.remove();
+    }
+}
+
+// ✅ 更优：使用 removeIf
+map.keySet().removeIf(this::shouldRemove);
+```
+
+### CopyOnWriteArrayList
+
+```java
+// 适用于读多写少的场景
+private final CopyOnWriteArrayList<String> list = new CopyOnWriteArrayList<>();
+
+// 写操作会复制整个数组，所以写操作慢
+list.add("item");
+
+// 读操作无锁，非常快
+for (String item : list) {
+    process(item);
+}
+```
+
+## 实战案例：订单处理系统
+
+### 问题场景
+
+电商系统中，订单创建后需要执行多个后续操作：
+- 扣减库存
+- 发送短信通知
+- 更新用户积分
+- 推送消息给商家
+
+### 串行处理（慢）
+
+```java
+public void createOrder(Order order) {
+    // 1. 创建订单
+    orderMapper.insert(order);
+    
+    // 2. 扣减库存（200ms）
+    inventoryService.decrease(order.getItems());
+    
+    // 3. 发送短信（500ms）
+    smsService.send(order.getUserPhone());
+    
+    // 4. 更新积分（100ms）
+    pointService.addPoints(order.getUserId(), order.getPoints());
+    
+    // 5. 推送商家（300ms）
+    merchantService.notify(order.getMerchantId());
+    
+    // 总耗时：约 1100ms
+}
+```
+
+### 并行优化（快）
+
+```java
+private final ExecutorService executor = new ThreadPoolExecutor(
+    10, 20, 60L, TimeUnit.SECONDS,
+    new ArrayBlockingQueue<>(100)
+);
+
+public void createOrder(Order order) {
+    // 1. 创建订单（必须串行）
+    orderMapper.insert(order);
+    
+    // 2. 并行执行后续操作
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
+    
+    // 扣减库存
+    futures.add(CompletableFuture.runAsync(
+        () -> inventoryService.decrease(order.getItems()),
+        executor
+    ));
+    
+    // 发送短信
+    futures.add(CompletableFuture.runAsync(
+        () -> smsService.send(order.getUserPhone()),
+        executor
+    ));
+    
+    // 更新积分
+    futures.add(CompletableFuture.runAsync(
+        () -> pointService.addPoints(order.getUserId(), order.getPoints()),
+        executor
+    ));
+    
+    // 推送商家
+    futures.add(CompletableFuture.runAsync(
+        () -> merchantService.notify(order.getMerchantId()),
+        executor
+    ));
+    
+    // 等待所有任务完成（可选）
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .exceptionally(ex -> {
+            log.error("订单后续处理失败", ex);
+            return null;
+        });
+    
+    // 总耗时：约 500ms（最慢的那个任务）
+}
+```
+
+## 常见坑点
+
+### 1. ThreadLocal 内存泄漏
+
+```java
+// ❌ 错误：使用后不清理
+private static final ThreadLocal<User> userContext = new ThreadLocal<>();
+
+public void handleRequest() {
+    userContext.set(currentUser);
+    // 处理请求...
+    // 忘记清理！
+}
+
+// ✅ 正确：在 finally 中清理
+public void handleRequest() {
+    try {
+        userContext.set(currentUser);
+        // 处理请求...
+    } finally {
+        userContext.remove(); // 必须清理
+    }
+}
+```
+
+### 2. 虚假唤醒
+
+```java
+// ❌ 错误：使用 if 判断
+public synchronized void waitUntilReady() throws InterruptedException {
+    if (!ready) {
+        wait();
+    }
+}
+
+// ✅ 正确：使用 while 循环
+public synchronized void waitUntilReady() throws InterruptedException {
+    while (!ready) {
+        wait();
+    }
+}
+```
+
+### 3. 死锁预防
+
+```java
+// ❌ 可能导致死锁
+public void transfer(Account from, Account to, int amount) {
+    synchronized (from) {
+        synchronized (to) {
+            from.debit(amount);
+            to.credit(amount);
+        }
+    }
+}
+
+// ✅ 按固定顺序获取锁
+public void transfer(Account from, Account to, int amount) {
+    Account first = from.getId() < to.getId() ? from : to;
+    Account second = from.getId() < to.getId() ? to : from;
+    
+    synchronized (first) {
+        synchronized (second) {
+            from.debit(amount);
+            to.credit(amount);
+        }
+    }
+}
+```
+
+## 性能监控
+
+### 线程池监控
+
+```java
+ScheduledExecutorService monitor = Executors.newSingleThreadScheduledExecutor();
+
+monitor.scheduleAtFixedRate(() -> {
+    log.info("线程池状态：核心={}, 最大={}, 活跃={}, 队列大小={}, 完成任务={}",
+        executor.getCorePoolSize(),
+        executor.getMaximumPoolSize(),
+        executor.getActiveCount(),
+        executor.getQueue().size(),
+        executor.getCompletedTaskCount()
+    );
+}, 0, 60, TimeUnit.SECONDS);
+```
+
+## 总结
+
+1. **线程池**：手动创建，合理设置参数，避免 OOM
+2. **锁机制**：简单用 synchronized，复杂用 ReentrantLock，读多写少用 ReadWriteLock
+3. **并发容器**：根据场景选择，注意迭代器使用
+4. **异步处理**：CompletableFuture 提升性能
+5. **资源清理**：ThreadLocal 必须清理，锁必须在 finally 中释放
+6. **监控**：生产环境必须监控线程池状态
+
+---
+
+**参考资料：**
+- 《Java 并发编程实战》
+- 《Effective Java》第三版
+- JDK 官方文档

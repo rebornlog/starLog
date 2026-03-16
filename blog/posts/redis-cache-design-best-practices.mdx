@@ -1,0 +1,598 @@
+---
+title: 'Redis 缓存设计实战：高并发场景下的最佳实践'
+date: '2026-03-14'
+tags: ['Redis', '缓存', '高并发', '分布式锁']
+category: tech
+summary: 'Redis 缓存设计全流程指南，涵盖缓存策略、穿透/击穿/雪崩解决方案、分布式锁实现等生产环境实战经验'
+draft: false
+---
+
+## 问题背景
+
+在高并发系统中，Redis 缓存是提升性能的关键组件。但使用不当会带来一系列问题：
+- 缓存穿透：查询不存在的数据，请求直达数据库
+- 缓存击穿：热点 key 过期，大量请求击穿到数据库
+- 缓存雪崩：大量 key 同时过期，数据库压力激增
+- 数据一致性：缓存与数据库数据不一致
+
+本文基于生产环境的实战经验，总结 Redis 缓存设计的最佳实践。
+
+## 缓存策略
+
+### 1. Cache-Aside 模式（推荐）
+
+```java
+// 读操作
+public User getUserById(Long userId) {
+    // 1. 先读缓存
+    String key = "user:" + userId;
+    String cached = redisTemplate.opsForValue().get(key);
+    
+    if (cached != null) {
+        return JSON.parseObject(cached, User.class);
+    }
+    
+    // 2. 缓存未命中，读数据库
+    User user = userMapper.selectById(userId);
+    
+    if (user != null) {
+        // 3. 写入缓存（设置过期时间）
+        String value = JSON.toJSONString(user);
+        redisTemplate.opsForValue().set(key, value, 30, TimeUnit.MINUTES);
+    }
+    
+    return user;
+}
+
+// 写操作
+public void updateUser(User user) {
+    // 1. 先更新数据库
+    userMapper.updateById(user);
+    
+    // 2. 删除缓存（下次读取时自动更新）
+    String key = "user:" + user.getId();
+    redisTemplate.delete(key);
+}
+```
+
+**为什么删除缓存而不是更新？**
+- 删除操作简单，避免并发更新问题
+- 延迟更新：下次读取时自动加载最新数据
+- 减少不必要的缓存写入
+
+### 2. Read/Write Through 模式
+
+```java
+// 使用 Spring Cache 抽象
+@Cacheable(value = "users", key = "#userId", unless = "#result == null")
+public User getUserById(Long userId) {
+    return userMapper.selectById(userId);
+}
+
+@CachePut(value = "users", key = "#user.id")
+public User updateUser(User user) {
+    userMapper.updateById(user);
+    return user;
+}
+
+@CacheEvict(value = "users", key = "#userId")
+public void deleteUser(Long userId) {
+    userMapper.deleteById(userId);
+}
+```
+
+**适用场景：**
+- 业务逻辑简单
+- 对一致性要求不高
+- 希望代码简洁
+
+### 3. Write Behind 模式
+
+```java
+// 异步写入缓存队列，批量更新数据库
+@Component
+public class UserCacheWriter {
+    
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+    
+    @Autowired
+    private UserMapper userMapper;
+    
+    // 写入缓存，异步更新数据库
+    public void updateUserAsync(User user) {
+        String key = "user:" + user.getId();
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+        
+        // 加入异步队列
+        asyncQueue.offer(user);
+    }
+    
+    // 定时批量更新数据库
+    @Scheduled(fixedDelay = 5000) // 每 5 秒执行一次
+    public void batchUpdate() {
+        List<User> batch = new ArrayList<>();
+        asyncQueue.drainTo(batch, 100); // 最多取 100 条
+        
+        if (!batch.isEmpty()) {
+            userMapper.batchUpdate(batch);
+        }
+    }
+}
+```
+
+**适用场景：**
+- 写多读少
+- 可以接受短暂不一致
+- 需要提升写入性能
+
+## 缓存异常处理
+
+### 1. 缓存穿透解决方案
+
+**问题：** 查询不存在的数据，缓存不命中，请求直达数据库
+
+**方案 1：布隆过滤器**
+
+```java
+@Component
+public class UserCacheService {
+    
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+    
+    // 使用 Redis 布隆过滤器
+    public boolean mightExist(Long userId) {
+        String key = "user:bloom";
+        // RedisBloom 模块命令
+        Boolean exists = redisTemplate.execute(
+            (RedisCallback<Boolean>) connection -> 
+                connection.execute(
+                    "BF.EXISTS".getBytes(),
+                    key.getBytes(),
+                    userId.toString().getBytes()
+                )
+        );
+        return Boolean.TRUE.equals(exists);
+    }
+    
+    public void addUser(Long userId) {
+        String key = "user:bloom";
+        redisTemplate.execute(
+            (RedisCallback<Void>) connection -> {
+                connection.execute(
+                    "BF.ADD".getBytes(),
+                    key.getBytes(),
+                    userId.toString().getBytes()
+                );
+                return null;
+            }
+        );
+    }
+    
+    public User getUserById(Long userId) {
+        // 1. 布隆过滤器判断是否存在
+        if (!mightExist(userId)) {
+            return null; // 肯定不存在
+        }
+        
+        // 2. 查询缓存
+        String key = "user:" + userId;
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            return JSON.parseObject(cached, User.class);
+        }
+        
+        // 3. 查询数据库
+        User user = userMapper.selectById(userId);
+        if (user != null) {
+            redisTemplate.opsForValue().set(key, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+        } else {
+            // 4. 缓存空值（防止穿透）
+            redisTemplate.opsForValue().set(key, "", 5, TimeUnit.MINUTES);
+        }
+        return user;
+    }
+}
+```
+
+**方案 2：缓存空值**
+
+```java
+public User getUserById(Long userId) {
+    String key = "user:" + userId;
+    String cached = redisTemplate.opsForValue().get(key);
+    
+    // 缓存了空字符串，说明数据不存在
+    if ("".equals(cached)) {
+        return null;
+    }
+    
+    if (cached != null) {
+        return JSON.parseObject(cached, User.class);
+    }
+    
+    // 查询数据库
+    User user = userMapper.selectById(userId);
+    
+    if (user == null) {
+        // 缓存空值，设置较短过期时间
+        redisTemplate.opsForValue().set(key, "", 5, TimeUnit.MINUTES);
+    } else {
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+    }
+    
+    return user;
+}
+```
+
+### 2. 缓存击穿解决方案
+
+**问题：** 热点 key 过期瞬间，大量请求击穿到数据库
+
+**方案 1：互斥锁**
+
+```java
+public User getUserById(Long userId) {
+    String key = "user:" + userId;
+    String cached = redisTemplate.opsForValue().get(key);
+    
+    if (cached != null) {
+        return JSON.parseObject(cached, User.class);
+    }
+    
+    // 获取互斥锁
+    String lockKey = "lock:user:" + userId;
+    if (tryLock(lockKey)) {
+        try {
+            // 双重检查
+            cached = redisTemplate.opsForValue().get(key);
+            if (cached != null) {
+                return JSON.parseObject(cached, User.class);
+            }
+            
+            // 查询数据库
+            User user = userMapper.selectById(userId);
+            if (user != null) {
+                redisTemplate.opsForValue().set(key, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+            }
+            return user;
+        } finally {
+            unlock(lockKey);
+        }
+    } else {
+        // 获取锁失败，等待重试
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return getUserById(userId); // 重试
+    }
+}
+
+private boolean tryLock(String lockKey) {
+    // SETNX 实现分布式锁
+    Boolean success = redisTemplate.opsForValue()
+        .setIfAbsent(lockKey, "locked", 10, TimeUnit.SECONDS);
+    return Boolean.TRUE.equals(success);
+}
+
+private void unlock(String lockKey) {
+    redisTemplate.delete(lockKey);
+}
+```
+
+**方案 2：逻辑过期**
+
+```java
+public class CacheObject<T> {
+    private T data;
+    private long expireTime; // 逻辑过期时间
+    
+    // getters and setters
+}
+
+public User getUserById(Long userId) {
+    String key = "user:" + userId;
+    String cached = redisTemplate.opsForValue().get(key);
+    
+    if (cached == null) {
+        return getUserFromDBAndCache(userId, key);
+    }
+    
+    CacheObject<User> cacheObj = JSON.parseObject(cached, new TypeReference<CacheObject<User>>() {});
+    
+    // 检查是否逻辑过期
+    if (cacheObj.getExpireTime() < System.currentTimeMillis()) {
+        // 异步更新缓存
+        CompletableFuture.runAsync(() -> getUserFromDBAndCache(userId, key));
+        // 返回旧数据
+        return cacheObj.getData();
+    }
+    
+    return cacheObj.getData();
+}
+
+private User getUserFromDBAndCache(Long userId, String key) {
+    User user = userMapper.selectById(userId);
+    if (user != null) {
+        CacheObject<User> cacheObj = new CacheObject<>();
+        cacheObj.setData(user);
+        // 逻辑过期时间：5 分钟
+        cacheObj.setExpireTime(System.currentTimeMillis() + 300000);
+        
+        // 物理不过期
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(cacheObj));
+    }
+    return user;
+}
+```
+
+### 3. 缓存雪崩解决方案
+
+**问题：** 大量 key 同时过期，数据库压力激增
+
+**方案 1：随机过期时间**
+
+```java
+public void cacheUser(User user) {
+    String key = "user:" + user.getId();
+    String value = JSON.toJSONString(user);
+    
+    // 基础过期时间 30 分钟 + 随机 0-10 分钟
+    long expireTime = 30 + new Random().nextInt(10);
+    redisTemplate.opsForValue().set(key, value, expireTime, TimeUnit.MINUTES);
+}
+```
+
+**方案 2：热点数据永不过期**
+
+```java
+// 对于热点数据，设置永不过期，通过逻辑过期控制
+public void cacheHotUser(User user) {
+    String key = "user:hot:" + user.getId();
+    CacheObject<User> cacheObj = new CacheObject<>();
+    cacheObj.setData(user);
+    cacheObj.setExpireTime(System.currentTimeMillis() + 300000);
+    
+    // 物理永不过期
+    redisTemplate.opsForValue().set(key, JSON.toJSONString(cacheObj));
+}
+```
+
+**方案 3：多级缓存**
+
+```java
+@Component
+public class MultiLevelCache {
+    
+    // 本地缓存（Caffeine）
+    private final Cache<String, Object> localCache = Caffeine.newBuilder()
+        .maximumSize(1000)
+        .expireAfterWrite(5, TimeUnit.MINUTES)
+        .build();
+    
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+    
+    public User getUserById(Long userId) {
+        String key = "user:" + userId;
+        
+        // 1. 本地缓存
+        Object local = localCache.getIfPresent(key);
+        if (local != null) {
+            return (User) local;
+        }
+        
+        // 2. Redis 缓存
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            User user = JSON.parseObject(cached, User.class);
+            localCache.put(key, user);
+            return user;
+        }
+        
+        // 3. 数据库
+        User user = userMapper.selectById(userId);
+        if (user != null) {
+            redisTemplate.opsForValue().set(key, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+            localCache.put(key, user);
+        }
+        
+        return user;
+    }
+}
+```
+
+## 分布式锁实现
+
+### Redisson 实现（推荐）
+
+```java
+@Component
+public class DistributedLockService {
+    
+    @Autowired
+    private RedissonClient redissonClient;
+    
+    /**
+     * 执行带锁的业务逻辑
+     */
+    public <T> T executeWithLock(String lockKey, long waitTime, long leaseTime, 
+                                  Supplier<T> supplier) {
+        RLock lock = redissonClient.getLock(lockKey);
+        boolean locked = false;
+        
+        try {
+            // 尝试获取锁
+            locked = lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS);
+            
+            if (!locked) {
+                throw new RuntimeException("获取锁失败");
+            }
+            
+            // 执行业务逻辑
+            return supplier.get();
+            
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("获取锁被中断", e);
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+    
+    /**
+     * 使用示例
+     */
+    public void deductStock(Long productId, int quantity) {
+        String lockKey = "lock:stock:" + productId;
+        
+        executeWithLock(lockKey, 5, 30, () -> {
+            // 1. 查询库存
+            Integer stock = redisTemplate.opsForValue()
+                .get("stock:" + productId);
+            
+            if (stock == null || stock < quantity) {
+                throw new RuntimeException("库存不足");
+            }
+            
+            // 2. 扣减库存
+            redisTemplate.opsForValue()
+                .decrement("stock:" + productId, quantity);
+            
+            // 3. 创建订单
+            // ...
+            
+            return null;
+        });
+    }
+}
+```
+
+### 红锁实现（高可用场景）
+
+```java
+@Configuration
+public class RedissonConfig {
+    
+    @Bean
+    public RedissonClient redissonClient() {
+        Config config = new Config();
+        
+        // 使用红锁需要多个独立的 Redis 实例
+        config.useMasterSlaveServers()
+            .setMasterAddress("redis://redis1:6379")
+            .addSlaveAddress("redis://redis1-slave:6379");
+        
+        // 创建多个 RedissonClient 实例
+        // ...
+        
+        return Redisson.create(config);
+    }
+}
+
+// 红锁使用
+public void executeWithRedLock(String lockKey, Runnable task) {
+    List<RLock> locks = new ArrayList<>();
+    
+    // 在多个 Redis 实例上获取锁
+    for (RedissonClient client : redissonClients) {
+        RLock lock = client.getLock(lockKey);
+        locks.add(lock);
+    }
+    
+    RedissonRedLock redLock = new RedissonRedLock(locks.toArray(new RLock[0]));
+    
+    boolean locked = false;
+    try {
+        locked = redLock.tryLock(5, 30, TimeUnit.SECONDS);
+        
+        if (!locked) {
+            throw new RuntimeException("获取红锁失败");
+        }
+        
+        task.run();
+        
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("获取锁被中断", e);
+    } finally {
+        if (locked) {
+            redLock.unlock();
+        }
+    }
+}
+```
+
+## 性能监控
+
+### 关键指标监控
+
+```java
+@Component
+public class RedisMonitor {
+    
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+    
+    @Scheduled(fixedRate = 60000) // 每分钟监控一次
+    public void monitor() {
+        // 内存使用
+        Properties info = redisTemplate.execute((RedisCallback<Properties>) 
+            connection -> connection.serverCommands().info());
+        
+        String usedMemory = info.getProperty("used_memory");
+        String usedMemoryPeak = info.getProperty("used_memory_peak");
+        String memFragmentationRatio = info.getProperty("mem_fragmentation_ratio");
+        
+        log.info("Redis 内存：已用={}MB, 峰值={}MB, 碎片率={}", 
+            Long.parseLong(usedMemory) / 1024 / 1024,
+            Long.parseLong(usedMemoryPeak) / 1024 / 1024,
+            memFragmentationRatio
+        );
+        
+        // 连接数
+        String connectedClients = info.getProperty("connected_clients");
+        log.info("Redis 连接数：{}", connectedClients);
+        
+        // 命中率
+        Stats stats = redisTemplate.execute((RedisCallback<Stats>) 
+            connection -> connection.serverCommands().dbSize());
+        
+        // 慢查询
+        // 通过 slowlog get 获取
+    }
+}
+```
+
+## 总结
+
+### 缓存设计原则
+
+1. **明确缓存目的**：提升性能 or 保护数据库
+2. **选择合适的缓存策略**：Cache-Aside / Read-Through / Write-Behind
+3. **预防缓存异常**：穿透、击穿、雪崩
+4. **保证数据一致性**：删除缓存优于更新缓存
+5. **监控和告警**：及时发现和解决问题
+
+### 最佳实践清单
+
+- [ ] 使用 Cache-Aside 模式
+- [ ] 设置合理的过期时间（加随机值）
+- [ ] 缓存空值防止穿透
+- [ ] 使用互斥锁防止击穿
+- [ ] 热点数据使用逻辑过期
+- [ ] 分布式锁使用 Redisson
+- [ ] 监控内存使用和命中率
+- [ ] 定期清理无用 key
+
+---
+
+**参考资料：**
+- 《Redis 设计与实现》
+- [Redis 官方文档](https://redis.io/documentation)
+- [Redisson 官方文档](https://github.com/redisson/redisson)

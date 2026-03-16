@@ -1,70 +1,54 @@
 import { NextResponse } from 'next/server'
-import { simpleGit } from 'simple-git'
-import path from 'path'
+import { PrismaClient } from '@prisma/client'
 
-export interface TimelineEvent {
-  date: string
-  title: string
-  description: string
-  type: 'feature' | 'fix' | 'docs' | 'refactor' | 'other'
-  commit: string
-  author: string
-}
+const prisma = new PrismaClient()
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const offset = parseInt(searchParams.get('offset') || '0')
-    
-    const repoPath = path.join(process.cwd())
-    const git = simpleGit(repoPath)
-    
-    // 获取提交记录（支持分页）
-    const log = await git.log({ maxCount: limit, from: `HEAD~${offset + limit}` })
-    
-    // 解析 Git 历史为时间线事件
-    const events: TimelineEvent[] = log.all.map(commit => ({
-      date: new Date(commit.date).toISOString().split('T')[0],
-      title: commit.message.split('\n')[0].replace(/^(feat|fix|docs|refactor|chore|style|test|perf):/, '').trim(),
-      description: commit.body || '',
-      type: getCommitType(commit.message),
-      commit: commit.hash.substring(0, 7),
-      author: commit.author_name,
-    }))
-    
-    // 获取总数
-    const total = await git.raw(['rev-list', '--count', 'HEAD'])
-    
-    return NextResponse.json({ 
-      success: true,
-      count: events.length,
-      total: parseInt(total.trim()),
-      hasMore: offset + events.length < parseInt(total.trim()),
-      events 
+    // 获取最新文章（作为时间线事件）
+    const recentPosts = await prisma.post.findMany({
+      where: { isPublished: true },
+      orderBy: { publishedAt: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        category: true,
+        publishedAt: true,
+        viewCount: true,
+      },
     })
+
+    // 转换为时间线格式
+    const timelineEvents = recentPosts.map(post => ({
+      id: post.id,
+      date: new Date(post.publishedAt).toISOString().split('T')[0],
+      title: post.title,
+      description: post.summary,
+      type: 'article',
+      category: post.category,
+      slug: post.slug,
+      viewCount: post.viewCount,
+      emoji: getCategoryEmoji(post.category),
+    }))
+
+    return NextResponse.json({ events: timelineEvents })
   } catch (error) {
     console.error('Failed to fetch timeline:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Failed to fetch timeline',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ events: [] }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
-function getCommitType(message: string): TimelineEvent['type'] {
-  const lowerMsg = message.toLowerCase()
-  if (lowerMsg.startsWith('feat:') || lowerMsg.startsWith('feature:')) return 'feature'
-  if (lowerMsg.startsWith('fix:') || lowerMsg.startsWith('bugfix:')) return 'fix'
-  if (lowerMsg.startsWith('docs:') || lowerMsg.startsWith('doc:')) return 'docs'
-  if (lowerMsg.startsWith('refactor:') || lowerMsg.startsWith('refactoring:')) return 'refactor'
-  if (lowerMsg.startsWith('chore:') || lowerMsg.startsWith('config:')) return 'other'
-  if (lowerMsg.startsWith('style:') || lowerMsg.startsWith('format:')) return 'other'
-  if (lowerMsg.startsWith('test:') || lowerMsg.startsWith('testing:')) return 'other'
-  if (lowerMsg.startsWith('perf:') || lowerMsg.startsWith('performance:')) return 'feature'
-  return 'other'
+function getCategoryEmoji(category: string): string {
+  const emojis: Record<string, string> = {
+    tech: '💻',
+    finance: '📈',
+    fengshui: '🧭',
+    business: '🔮',
+  }
+  return emojis[category] || '📝'
 }

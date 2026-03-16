@@ -1,13 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { calculateBazi, getElementColor } from '@/lib/bazi/calculator'
 import { generateDietAdvice, FOOD_DATABASE } from '@/lib/bazi/food-database'
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
 import { useToast } from '@/components/Toast'
 import SEO from '@/components/SEO'
-import RadarChart from '@/components/RadarChart'
 import { Skeleton } from '@/components/Skeleton'
+
+// 动态导入重型组件
+const RadarChart = dynamic(() => import('@/components/RadarChart'), {
+  loading: () => <div className="h-64 flex items-center justify-center"><Skeleton className="w-full h-full" /></div>,
+  ssr: false
+})
 
 export default function DietPage() {
   const { showToast } = useToast()

@@ -1,0 +1,422 @@
+---
+title: 'Elasticsearch 性能优化实战：从 10 秒到 100ms'
+date: '2026-03-14'
+tags: ['Elasticsearch', '性能优化', '搜索引擎', 'ELK']
+category: tech
+summary: 'Elasticsearch 查询慢的终极解决方案，涵盖索引设计、查询优化、集群调优等实战经验，让查询从 10 秒降到 100ms'
+draft: false
+---
+
+## 问题背景
+
+我们的日志分析系统在使用 Elasticsearch 进行海量数据查询时，遇到了严重的性能问题：
+- 简单查询耗时 3-5 秒
+- 复杂聚合查询耗时 10 秒以上
+- 高峰期经常超时
+
+经过一周的性能优化，最终将查询时间稳定在 100ms 以内。本文将详细记录优化过程。
+
+## 性能分析
+
+### 第一步：定位慢查询
+
+```bash
+# 启用慢查询日志
+PUT /_cluster/settings
+{
+  "persistent": {
+    "index.search.slowlog.threshold.query.warn": "10s",
+    "index.search.slowlog.threshold.query.info": "5s",
+    "index.search.slowlog.threshold.fetch.warn": "1s",
+    "index.indexing.slowlog.threshold.index.warn": "10s"
+  }
+}
+```
+
+**分析结果：**
+- 80% 的慢查询是因为全表扫描
+- 15% 是因为深度分页
+- 5% 是因为复杂的聚合查询
+
+## 索引优化
+
+### 1. 合理的分片策略
+
+```json
+// ❌ 错误：分片过多
+{
+  "settings": {
+    "number_of_shards": 20,  // 太多小分片
+    "number_of_replicas": 1
+  }
+}
+
+// ✅ 正确：根据数据量设置
+{
+  "settings": {
+    "number_of_shards": 5,   // 每个分片 30-50GB
+    "number_of_replicas": 1
+  }
+}
+```
+
+**分片大小建议：**
+- 单个分片：30-50GB
+- 分片数量 = 数据总量 / 40GB
+- 分片数 ≤ 节点数 * 2
+
+### 2. 优化 Mapping 设计
+
+```json
+// ❌ 错误：使用默认的 dynamic mapping
+{
+  "mappings": {
+    "properties": {
+      "message": { "type": "text" }  // 会被分词，不适合精确匹配
+    }
+  }
+}
+
+// ✅ 正确：明确字段类型
+{
+  "mappings": {
+    "properties": {
+      "message": { 
+        "type": "text",
+        "fields": {
+          "keyword": { "type": "keyword" }  // 支持精确匹配
+        }
+      },
+      "userId": { "type": "keyword" },     // 不需要分词
+      "timestamp": { "type": "date" },
+      "amount": { "type": "double" },
+      "status": { "type": "byte" }         // 节省空间
+    }
+  }
+}
+```
+
+### 3. 使用 ILM 管理生命周期
+
+```json
+PUT /_ilm/policy/logs_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {
+          "rollover": {
+            "max_size": "50GB",
+            "max_age": "1d"
+          }
+        }
+      },
+      "warm": {
+        "min_age": "2d",
+        "actions": {
+          "shrink": { "number_of_shards": 1 },
+          "forcemerge": { "max_num_segments": 1 }
+        }
+      },
+      "delete": {
+        "min_age": "30d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+```
+
+## 查询优化
+
+### 1. 避免全表扫描
+
+```json
+// ❌ 错误：使用 wildcard 查询
+{
+  "query": {
+    "wildcard": {
+      "message": { "value": "*error*" }  // 全表扫描
+    }
+  }
+}
+
+// ✅ 正确：使用 match 查询
+{
+  "query": {
+    "match": {
+      "message": "error"
+    }
+  }
+}
+
+// ✅ 更优：使用 filter 上下文（可缓存）
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "level": "error" } },
+        { "range": { "timestamp": { "gte": "now-1h" } } }
+      ]
+    }
+  }
+}
+```
+
+### 2. 优化深度分页
+
+```json
+// ❌ 错误：深度分页性能差
+{
+  "from": 10000,
+  "size": 10
+}
+
+// ✅ 方案 1：search_after（推荐）
+{
+  "size": 10,
+  "query": { "match_all": {} },
+  "sort": [{ "timestamp": "desc" }],
+  "search_after": [1678800000000]
+}
+
+// ✅ 方案 2：scroll（适合导出数据）
+POST /logs-*/_search?scroll=1m
+{
+  "size": 1000,
+  "query": { "match_all": {} }
+}
+```
+
+### 3. 使用 filter 缓存
+
+```json
+// ❌ 错误：使用 query 过滤
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "status": 200 } }  // 每次都会计算
+      ]
+    }
+  }
+}
+
+// ✅ 正确：使用 filter（可缓存）
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "status": 200 } }  // 结果可缓存
+      ]
+    }
+  }
+}
+```
+
+### 4. 优化聚合查询
+
+```json
+// ❌ 错误：全量聚合
+{
+  "size": 0,
+  "aggs": {
+    "all_users": {
+      "terms": { "field": "userId" }  // 聚合所有用户
+    }
+  }
+}
+
+// ✅ 正确：限制聚合数量
+{
+  "size": 0,
+  "aggs": {
+    "top_users": {
+      "terms": { 
+        "field": "userId",
+        "size": 100  // 只取前 100
+      }
+    }
+  }
+}
+
+// ✅ 更优：先过滤再聚合
+{
+  "size": 0,
+  "query": {
+    "range": { "timestamp": { "gte": "now-1h" } }
+  },
+  "aggs": {
+    "recent_users": {
+      "terms": { 
+        "field": "userId",
+        "size": 100
+      }
+    }
+  }
+}
+```
+
+## 集群调优
+
+### 1. JVM 堆内存配置
+
+```bash
+# elasticsearch.yml
+# 设置为物理内存的 50%，但不超过 31GB
+-Xms31g
+-Xmx31g
+```
+
+**为什么不超过 31GB？**
+- 超过 32GB 会失去压缩对象指针（Compressed Oops）
+- 实际可用内存反而下降
+
+### 2. 刷新间隔调整
+
+```json
+// 默认 1 秒刷新一次
+PUT /logs-*/_settings
+{
+  "index.refresh_interval": "30s"  // 写入量大时延长
+}
+
+// 批量导入时临时关闭
+PUT /logs-*/_settings
+{
+  "index.refresh_interval": "-1"
+}
+
+// 导入完成后恢复
+PUT /logs-*/_settings
+{
+  "index.refresh_interval": "1s"
+}
+```
+
+### 3. 合并策略优化
+
+```json
+PUT /logs-*/_settings
+{
+  "index.merge.scheduler.max_thread_count": 1,  // 减少合并线程
+  "index.translog.durability": "async",         // 异步提交事务日志
+  "index.translog.sync_interval": "5s"
+}
+```
+
+## 实战案例：日志查询优化
+
+### 优化前（10 秒+）
+
+```json
+GET /logs-*/_search
+{
+  "from": 0,
+  "size": 100,
+  "query": {
+    "query_string": {
+      "query": "*error* AND *timeout*"
+    }
+  },
+  "sort": [{ "timestamp": "desc" }]
+}
+```
+
+**问题分析：**
+1. wildcard 查询导致全表扫描
+2. query_string 性能差
+3. 没有使用 filter 缓存
+4. 跨多个索引查询
+
+### 优化后（100ms）
+
+```json
+GET /logs-2026.03.14/_search
+{
+  "size": 100,
+  "query": {
+    "bool": {
+      "filter": [
+        { "range": { "timestamp": { "gte": "now-1h" } } },
+        { "term": { "level": "error" } }
+      ],
+      "must": [
+        { "match": { "message": "timeout" } }
+      ]
+    }
+  },
+  "sort": [{ "timestamp": "desc" }]
+}
+```
+
+**优化点：**
+1. 指定具体索引（避免跨索引）
+2. 使用 filter 过滤时间范围
+3. match 替代 wildcard
+4. 添加时间范围限制
+
+## 监控告警
+
+### 性能监控指标
+
+```bash
+# 集群健康状态
+GET /_cluster/health
+
+# 节点统计信息
+GET /_nodes/stats
+
+# 索引统计信息
+GET /_stats
+
+# 慢查询日志
+GET /_cat/shards?v&s=docs.desc
+```
+
+### 关键指标告警
+
+| 指标 | 阈值 | 告警级别 |
+|------|------|---------|
+| 集群状态 | red/yellow | P0 |
+| 查询延迟 P99 | > 1s | P1 |
+| 写入延迟 P99 | > 5s | P1 |
+| JVM 堆内存使用率 | > 85% | P2 |
+| 分片数量 | > 1000/节点 | P2 |
+
+## 总结
+
+### 优化效果对比
+
+| 指标 | 优化前 | 优化后 | 提升 |
+|------|--------|--------|------|
+| 简单查询 | 3-5s | 50-100ms | 50 倍 |
+| 复杂聚合 | 10s+ | 200-500ms | 20 倍 |
+| 写入吞吐 | 5000/s | 20000/s | 4 倍 |
+
+### 核心优化点
+
+1. **索引设计**：合理分片、优化 Mapping、ILM 管理
+2. **查询优化**：避免 wildcard、使用 filter、优化分页
+3. **集群调优**：JVM 配置、刷新间隔、合并策略
+4. **监控告警**：及时发现和解决问题
+
+### 最佳实践清单
+
+- [ ] 索引分片大小控制在 30-50GB
+- [ ] 明确定义 Mapping，避免 dynamic
+- [ ] 查询优先使用 filter 上下文
+- [ ] 避免深度分页，使用 search_after
+- [ ] 聚合查询限制返回数量
+- [ ] 定期 force_merge 历史索引
+- [ ] 监控集群健康状态和性能指标
+
+---
+
+**参考资料：**
+- [Elasticsearch 官方文档](https://www.elastic.co/guide/)
+- 《Elasticsearch 权威指南》
+- [Elasticsearch 性能调优最佳实践](https://www.elastic.co/guide/en/elasticsearch/reference/current/tune-for-indexing-speed.html)

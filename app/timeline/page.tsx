@@ -1,12 +1,16 @@
 import { Metadata } from 'next'
 import Breadcrumb from '@/components/Breadcrumb'
+import { PrismaClient } from '@prisma/client'
 
 export const metadata: Metadata = {
   title: '大事纪 | starLog - 个人知识库',
   description: 'starLog 项目发展历程和重要里程碑',
 }
 
-const timelineEvents = [
+const prisma = new PrismaClient()
+
+// 项目里程碑事件（静态）
+const milestoneEvents = [
   {
     date: '2026-03-12',
     title: 'UI/UX 全面优化',
@@ -100,15 +104,70 @@ const timelineEvents = [
   },
 ]
 
+// 动态获取最新文章
+async function getRecentPosts() {
+  try {
+    const posts = await prisma.post.findMany({
+      where: { isPublished: true },
+      orderBy: { publishedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        category: true,
+        publishedAt: true,
+        viewCount: true,
+      },
+    })
+
+    return posts.map(post => ({
+      id: post.id,
+      date: new Date(post.publishedAt).toISOString().split('T')[0],
+      title: post.title,
+      description: post.summary,
+      type: 'article' as const,
+      category: post.category,
+      slug: post.slug,
+      viewCount: post.viewCount,
+      emoji: getCategoryEmoji(post.category),
+    }))
+  } catch (error) {
+    console.error('Failed to fetch posts:', error)
+    return []
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+function getCategoryEmoji(category: string): string {
+  const emojis: Record<string, string> = {
+    tech: '💻',
+    finance: '📈',
+    fengshui: '🧭',
+    business: '🔮',
+  }
+  return emojis[category] || '📝'
+}
+
 const typeColors = {
   feature: 'from-emerald-500 to-teal-500',
   fix: 'from-blue-500 to-cyan-500',
   performance: 'from-purple-500 to-pink-500',
   devops: 'from-orange-500 to-amber-500',
   milestone: 'from-red-500 to-rose-500',
+  article: 'from-emerald-500 to-teal-500',
 }
 
-export default function TimelinePage() {
+export default async function TimelinePage() {
+  const articleEvents = await getRecentPosts()
+  
+  // 合并文章事件和里程碑事件，按日期排序
+  const allEvents = [...articleEvents, ...milestoneEvents].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
+  
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -132,13 +191,14 @@ export default function TimelinePage() {
 
           {/* 事件列表 */}
           <div className="space-y-8">
-            {timelineEvents.map((event, index) => {
+            {allEvents.map((event, index) => {
               const isLeft = index % 2 === 0
               const colors = typeColors[event.type as keyof typeof typeColors]
+              const isArticle = event.type === 'article'
               
               return (
                 <div
-                  key={index}
+                  key={event.id || index}
                   className={`relative flex items-center ${
                     isLeft ? 'md:flex-row' : 'md:flex-row-reverse'
                   }`}
@@ -147,27 +207,52 @@ export default function TimelinePage() {
                   <div className={`ml-20 md:ml-0 md:w-1/2 ${
                     isLeft ? 'md:pr-12 md:text-right' : 'md:pl-12 md:text-left'
                   }`}>
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                      <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r ${colors} mb-3`}>
-                        {event.type === 'feature' && '✨ 新功能'}
-                        {event.type === 'fix' && '🐛 修复'}
-                        {event.type === 'performance' && '⚡ 性能'}
-                        {event.type === 'devops' && '🚀 运维'}
-                        {event.type === 'milestone' && '🎉 里程碑'}
+                    {isArticle ? (
+                      <a
+                        href={`/blog/${event.slug}`}
+                        className="block bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                      >
+                        <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r ${colors} mb-3`}>
+                          📝 文章发布
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                          {event.emoji} {event.title}
+                        </h3>
+                        
+                        <p className="text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                          {event.description}
+                        </p>
+                        
+                        <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-500">
+                          <time>{event.date}</time>
+                          <span>·</span>
+                          <span>👁️ {event.viewCount}</span>
+                        </div>
+                      </a>
+                    ) : (
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r ${colors} mb-3`}>
+                          {event.type === 'feature' && '✨ 新功能'}
+                          {event.type === 'fix' && '🐛 修复'}
+                          {event.type === 'performance' && '⚡ 性能'}
+                          {event.type === 'devops' && '🚀 运维'}
+                          {event.type === 'milestone' && '🎉 里程碑'}
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                          {event.emoji} {event.title}
+                        </h3>
+                        
+                        <p className="text-gray-600 dark:text-gray-400 mb-3">
+                          {event.description}
+                        </p>
+                        
+                        <time className="text-sm text-gray-500 dark:text-gray-500">
+                          {event.date}
+                        </time>
                       </div>
-                      
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                        {event.emoji} {event.title}
-                      </h3>
-                      
-                      <p className="text-gray-600 dark:text-gray-400 mb-3">
-                        {event.description}
-                      </p>
-                      
-                      <time className="text-sm text-gray-500 dark:text-gray-500">
-                        {event.date}
-                      </time>
-                    </div>
+                    )}
                   </div>
 
                   {/* 中心点 */}
@@ -186,31 +271,31 @@ export default function TimelinePage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
               <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                {timelineEvents.filter(e => e.type === 'feature').length}
+                {allEvents.filter(e => e.type === 'article').length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">文章</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {allEvents.filter(e => e.type === 'feature').length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">新功能</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {timelineEvents.filter(e => e.type === 'fix').length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">修复</div>
-            </div>
-            <div className="text-center">
               <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                {timelineEvents.filter(e => e.type === 'performance').length}
+                {allEvents.filter(e => e.type === 'performance').length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">性能优化</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                {timelineEvents.filter(e => e.type === 'devops').length}
+                {allEvents.filter(e => e.type === 'devops').length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">运维</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-red-600 dark:text-red-400">
-                {timelineEvents.filter(e => e.type === 'milestone').length}
+                {allEvents.filter(e => e.type === 'milestone').length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">里程碑</div>
             </div>

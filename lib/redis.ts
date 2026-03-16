@@ -98,3 +98,12 @@ export async function setCachedPostList(data: any, category?: string, page = 1, 
   const key = `post:list:${category || 'all'}:${page}:${limit}`
   return setCache({ key, ttl: 300 }, data)
 }
+
+// 热门文章缓存
+export async function getCachedPopularPosts(limit: number = 10) {
+  return getCache({ key: `popular_posts:${limit}`, ttl: 600 })
+}
+
+export async function setCachedPopularPosts(posts: any[], limit: number = 10) {
+  return setCache({ key: `popular_posts:${limit}`, ttl: 600 }, posts)
+}

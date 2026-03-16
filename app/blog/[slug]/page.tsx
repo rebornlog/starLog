@@ -5,6 +5,8 @@ import { getCachedArticle, setCachedArticle } from '@/lib/redis'
 import TableOfContents from '@/components/TableOfContents'
 import ArticleContent from '@/components/ArticleContent'
 import ReadingProgress from '@/components/ReadingProgress'
+import FavoriteButton from '@/components/FavoriteButton'
+import WalineComments from '@/components/WalineComments'
 
 const prisma = new PrismaClient({
   log: ['error'],
@@ -60,20 +62,30 @@ async function getPost(slug: string) {
       data: { viewCount: { increment: 1 } },
     }).catch(console.error)
 
-    // 4. 获取相关文章（简化查询）
+    // 4. 获取相关文章（优化算法：同分类 + 同标签 + 阅读量）
     const relatedPosts = await prisma.post.findMany({
       where: {
-        category: post.category,
         isPublished: true,
         id: { not: post.id },
+        OR: [
+          { category: post.category }, // 同分类
+          { tags: { hasSome: post.tags || [] } }, // 同标签
+        ],
       },
       take: 3,
-      orderBy: { publishedAt: 'desc' },
+      orderBy: [
+        { viewCount: 'desc' }, // 按阅读量排序
+      ],
       select: {
         id: true,
         slug: true,
         title: true,
+        summary: true,
+        category: true,
+        tags: true,
         publishedAt: true,
+        readingTime: true,
+        viewCount: true,
       },
     })
 
@@ -110,31 +122,59 @@ export default async function PostPage({ params }: PageProps) {
           <Link href="/blog/" className="text-blue-600 hover:underline mb-4 inline-block">
             ← 返回博客列表
           </Link>
-          <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-          <div className="flex items-center gap-4 text-gray-600">
-            <span>{new Date(post.publishedAt).toLocaleDateString('zh-CN')}</span>
-            <span>·</span>
-            <span>{post.readingTime} 分钟阅读</span>
-            <span>·</span>
-            <span>👁️ {post.viewCount}</span>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+              <div className="flex items-center gap-4 text-gray-600 flex-wrap">
+                <span>{new Date(post.publishedAt).toLocaleDateString('zh-CN')}</span>
+                <span>·</span>
+                <span>{post.readingTime} 分钟阅读</span>
+                <span>·</span>
+                <span>👁️ {post.viewCount}</span>
+              </div>
+            </div>
+            {/* 收藏按钮 */}
+            <div className="flex-shrink-0">
+              <FavoriteButton
+                postId={post.id}
+                postTitle={post.title}
+                postSlug={post.slug}
+              />
+            </div>
           </div>
         </header>
         <TableOfContents />
         <ArticleContent content={post.content} />
         {relatedPosts.length > 0 && (
-          <section className="mt-12 pt-8 border-t">
-            <h2 className="text-2xl font-bold mb-4">相关文章</h2>
-            <ul className="space-y-2">
+          <section className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-2">
+              <span>📖</span> 相关文章
+            </h2>
+            <div className="grid md:grid-cols-3 gap-4">
               {relatedPosts.map((p) => (
-                <li key={p.id}>
-                  <Link href={`/blog/${p.slug}`} className="text-blue-600 hover:underline">
+                <Link
+                  key={p.id}
+                  href={`/blog/${p.slug}`}
+                  className="group block p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
+                >
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 mb-2">
                     {p.title}
-                  </Link>
-                </li>
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                    {p.summary}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span>📅 {new Date(p.publishedAt).toLocaleDateString('zh-CN')}</span>
+                    <span>·</span>
+                    <span>👁️ {p.viewCount}</span>
+                  </div>
+                </Link>
               ))}
-            </ul>
+            </div>
           </section>
         )}
+        {/* 评论系统 */}
+        <WalineComments slug={post.slug} />
       </article>
     </>
   )

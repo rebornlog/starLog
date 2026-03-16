@@ -1,477 +1,177 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { getFavorites, removeFavorite, formatTime, FavoriteItem } from '@/lib/storage';
-import { useToast } from '@/components/Toast';
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Breadcrumb from '@/components/Breadcrumb'
+
+interface FavoritePost {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  category: string
+  tags: string[]
+  publishedAt: string
+  readingTime: number
+  viewCount: number
+}
 
 export default function FavoritesPage() {
-  const { showToast } = useToast();
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  const [filter, setFilter] = useState<'all' | 'iching' | 'zodiac' | 'diet'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showExport, setShowExport] = useState(false);
-  const [exportSuccess, setExportSuccess] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>([])
+  const [posts, setPosts] = useState<FavoritePost[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const data = getFavorites();
-    setFavorites(data);
-  }, []);
+    loadFavorites()
+  }, [])
 
-  const handleRemove = (type: string, id: string) => {
-    if (removeFavorite(type, id)) {
-      setFavorites(favorites.filter(f => !(f.type === type && f.id === id)));
-      showToast('已取消收藏', 'info');
-    }
-  };
-
-  // 切换选择模式
-  const toggleSelectMode = () => {
-    setSelectMode(!selectMode);
-    setSelectedIds(new Set());
-    showToast(selectMode ? '已退出选择模式' : '已进入选择模式，可多选收藏', 'info');
-  };
-
-  // 切换单个收藏选择状态
-  const toggleSelect = (type: string, id: string) => {
-    const key = `${type}-${id}`;
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(key)) {
-      newSelected.delete(key);
-    } else {
-      newSelected.add(key);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  // 全选/取消全选
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredFavorites.length) {
-      setSelectedIds(new Set());
-    } else {
-      const allIds = new Set(filteredFavorites.map(f => `${f.type}-${f.id}`));
-      setSelectedIds(allIds);
-    }
-  };
-
-  // 批量删除
-  const handleBatchDelete = () => {
-    if (selectedIds.size === 0) {
-      showToast('请先选择要删除的收藏', 'warning');
-      return;
-    }
-
-    if (confirm(`确定要删除选中的 ${selectedIds.size} 条收藏吗？此操作不可恢复！`)) {
-      let newFavorites = [...favorites];
-      selectedIds.forEach(key => {
-        const [type, ...rest] = key.split('-');
-        const id = rest.join('-');
-        removeFavorite(type, id);
-        newFavorites = newFavorites.filter(f => !(f.type === type && f.id === id));
-      });
-      setFavorites(newFavorites);
-      setSelectedIds(new Set());
-      setSelectMode(false);
-      showToast(`已删除 ${selectedIds.size} 条收藏`, 'success');
-    }
-  };
-
-  // 导出收藏为 JSON
-  const handleExport = () => {
+  async function loadFavorites() {
     try {
-      const dataStr = JSON.stringify(favorites, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `starlog-favorites-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setExportSuccess(true);
-      showToast(`导出成功！已下载 ${favorites.length} 条收藏`, 'success');
-      setTimeout(() => setExportSuccess(false), 3000);
-    } catch (error) {
-      showToast('导出失败，请重试', 'error');
-    }
-  };
+      // 从 localStorage 加载收藏的文章 ID
+      const favIds = JSON.parse(localStorage.getItem('favorites') || '[]')
+      setFavorites(favIds)
 
-  // 导入收藏
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target?.result as string);
-        if (Array.isArray(imported)) {
-          // 合并收藏（去重）
-          const existingIds = new Set(favorites.map(f => `${f.type}-${f.id}`));
-          const newFavorites = imported.filter(
-            (item: FavoriteItem) => !existingIds.has(`${item.type}-${item.id}`)
-          );
-          
-          if (newFavorites.length > 0) {
-            localStorage.setItem('starlog_favorites', JSON.stringify([...newFavorites, ...favorites]));
-            setFavorites([...newFavorites, ...favorites]);
-            showToast(`成功导入 ${newFavorites.length} 条收藏！`, 'success');
-          } else {
-            showToast('没有新的收藏需要导入', 'info');
-          }
-        }
-      } catch (error) {
-        showToast('导入失败：文件格式不正确', 'error');
+      if (favIds.length === 0) {
+        setLoading(false)
+        return
       }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  };
 
-  // 清空所有收藏
-  const handleClearAll = () => {
-    if (confirm('确定要清空所有收藏吗？此操作不可恢复！')) {
-      localStorage.removeItem('starlog_favorites');
-      setFavorites([]);
-      showToast('已清空所有收藏', 'info');
+      // 获取文章详情（调用 API）
+      const res = await fetch(`/api/favorites?ids=${favIds.join(',')}`)
+      const data = await res.json()
+      setPosts(data.posts || [])
+    } catch (error) {
+      console.error('Failed to load favorites:', error)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  // 双重筛选：先按类型，再按搜索关键词
-  const filteredFavorites = (filter === 'all' 
-    ? favorites 
-    : favorites.filter(f => f.type === filter)
-  ).filter(item => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
+  function removeFavorite(postId: string) {
+    const newFavorites = favorites.filter(id => id !== postId)
+    localStorage.setItem('favorites', JSON.stringify(newFavorites))
+    setFavorites(newFavorites)
+    setPosts(posts.filter(p => p.id !== postId))
+    
+    window.dispatchEvent(new CustomEvent('toast', {
+      detail: {
+        message: '已取消收藏',
+        type: 'info',
+        duration: 2000
+      }
+    }))
+  }
+
+  if (loading) {
     return (
-      item.title.toLowerCase().includes(query) ||
-      getTypeLabel(item.type).toLowerCase().includes(query)
-    );
-  });
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'iching': return '问卦';
-      case 'zodiac': return '星座';
-      case 'diet': return '饮食';
-      default: return type;
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'iching': return '☯';
-      case 'zodiac': return '✨';
-      case 'diet': return '🥗';
-      default: return '📌';
-    }
-  };
+      <main className="min-h-screen bg-gradient-to-b from-yellow-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
+        <div className="max-w-5xl mx-auto animate-pulse">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-8" />
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-pink-50 to-red-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-12 px-4">
+    <main className="min-h-screen bg-gradient-to-b from-yellow-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
       <div className="max-w-5xl mx-auto">
-        {/* 标题 */}
+        {/* 面包屑导航 */}
+        <Breadcrumb />
+        
+        {/* 页面标题 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-purple-900 dark:text-purple-100 mb-4">
-            ⭐ 我的收藏 ⭐
-          </h1>
-          <p className="text-purple-700 dark:text-purple-300 text-lg">
-            珍藏的卦象与运势
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <span className="text-4xl">⭐</span>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 bg-clip-text text-transparent">
+              我的收藏
+            </h1>
+          </div>
+          <p className="text-gray-600 dark:text-gray-400">
+            珍藏的好文章，共 {favorites.length} 篇
           </p>
         </div>
 
-        {/* 统计信息和管理按钮 */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl mb-8">
-          {/* 搜索框 */}
-          <div className="mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="🔍 搜索收藏..."
-                className="w-full px-4 py-3 pl-12 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white transition-all"
-              />
-              <svg
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+        {/* 收藏列表 */}
+        {favorites.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📭</div>
+            <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">
+              还没有收藏任何文章
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              遇到好文章时点击"收藏"按钮，它们会出现在这里
+            </p>
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all hover:-translate-y-1"
+            >
+              去浏览文章
+              <span>→</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                className="group p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
-              {searchQuery && (
+                {/* 移除按钮 */}
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  aria-label="清空搜索"
+                  onClick={() => removeFavorite(post.id)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                  aria-label="取消收藏"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              )}
-            </div>
-            {searchQuery && (
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                找到 {filteredFavorites.length} 条相关收藏
-              </p>
-            )}
-          </div>
 
-          {/* 统计 + 管理按钮 */}
-          <div className="flex flex-col gap-4 mb-6">
-            {/* 统计 */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{favorites.length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">总收藏</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-                {favorites.filter(f => f.type === 'iching').length}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">问卦</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {favorites.filter(f => f.type === 'zodiac').length}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">星座</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                {favorites.filter(f => f.type === 'diet').length}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">饮食</p>
-            </div>
-            </div>
-            
-            {/* 管理按钮 - 移动端优化 */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
-              <button
-                onClick={handleExport}
-                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation"
-                title="导出收藏为 JSON 文件"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                <span className="hidden sm:inline">导出</span>
-              </button>
-              
-              <label className="px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation cursor-pointer active:scale-95 transition-transform">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                <span className="hidden sm:inline">导入</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImport}
-                  className="hidden"
-                />
-              </label>
-              
-              <button
-                onClick={handleClearAll}
-                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation active:scale-95 transition-transform"
-                title="清空所有收藏"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <span className="hidden sm:inline">清空</span>
-              </button>
-              
-              <Link
-                href="/"
-                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] touch-manipulation active:scale-95 transition-transform"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span className="hidden sm:inline">首页</span>
-              </Link>
-            </div>
-          </div>
-          
-          {/* 导出成功提示 */}
-          {exportSuccess && (
-            <div className="mb-4 p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-center text-sm font-medium animate-pulse">
-              ✅ 导出成功！
-            </div>
-          )}
-        </div>
-
-        {/* 批量操作工具栏 */}
-        {selectMode && (
-          <div className="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-2xl p-4 mb-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={toggleSelectAll}
-                  className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
-                >
-                  {selectedIds.size === filteredFavorites.length ? '取消全选' : '全选'}
-                </button>
-                <span className="text-purple-700 dark:text-purple-300 font-medium">
-                  已选择 {selectedIds.size} / {filteredFavorites.length} 项
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={toggleSelectMode}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleBatchDelete}
-                  disabled={selectedIds.size === 0}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  删除选中 ({selectedIds.size})
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 筛选器 - 移动端优化 */}
-        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8 justify-between items-center">
-          {/* 左侧：类型筛选 */}
-          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
-            {[
-              { key: 'all', label: '全部', icon: '📚' },
-              { key: 'iching', label: '问卦', icon: '☯' },
-              { key: 'zodiac', label: '星座', icon: '✨' },
-              { key: 'diet', label: '饮食', icon: '🥗' },
-            ].map(({ key, label, icon }) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key as any)}
-                className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all min-h-[44px] touch-manipulation active:scale-95 ${
-                  filter === key
-                    ? 'bg-purple-600 text-white shadow-lg scale-105'
-                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span className="text-base sm:inline">{icon}</span>
-                <span className="ml-1.5 sm:ml-2 text-sm sm:text-base">{label}</span>
-              </button>
-            ))}
-          </div>
-          
-          {/* 右侧：批量操作按钮 */}
-          <button
-            onClick={toggleSelectMode}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all min-h-[44px] touch-manipulation active:scale-95 flex items-center gap-2 ${
-              selectMode
-                ? 'bg-purple-600 text-white shadow-lg'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span className="text-sm sm:text-base">{selectMode ? '完成' : '批量管理'}</span>
-          </button>
-        </div>
-
-        {/* 收藏列表 */}
-        {filteredFavorites.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 sm:p-12 shadow-xl text-center">
-            <div className="text-5xl sm:text-6xl mb-4">📭</div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
-              还没有收藏
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6">
-              去探索喜欢的卦象和运势，添加收藏吧！
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Link
-                href="/iching"
-                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
-              >
-                ☯ 问卦
-              </Link>
-              <Link
-                href="/zodiac"
-                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
-              >
-                星座运势
-              </Link>
-              <Link
-                href="/diet"
-                className="px-6 py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
-              >
-                能量饮食
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredFavorites.map((item) => (
-              <div
-                key={`${item.type}-${item.id}`}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{getTypeIcon(item.type)}</span>
-                      <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">
-                        {getTypeLabel(item.type)}
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatTime(item.createdAt)}
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                      {item.title}
-                    </h3>
-                    {item.data?.description && (
-                      <p className="text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {item.data.description}
+                <Link href={`/blog/${post.slug}`}>
+                  <div className="flex items-start gap-4">
+                    <div className="text-3xl group-hover:scale-110 transition-transform">⭐</div>
+                    <div className="flex-1 min-w-0 pr-12">
+                      <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">
+                        {post.title}
+                      </h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
+                        {post.summary}
                       </p>
-                    )}
+                      
+                      {/* 标签显示 */}
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {post.tags.slice(0, 3).map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-1 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs rounded-full"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        <span>{new Date(post.publishedAt).toLocaleDateString('zh-CN')}</span>
+                        <span>·</span>
+                        <span>{post.readingTime} 分钟阅读</span>
+                        <span>·</span>
+                        <span>👁️ {post.viewCount}</span>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleRemove(item.type, item.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    title="取消收藏"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
+                </Link>
               </div>
             ))}
           </div>
         )}
-
-        {/* 底部导航 */}
-        <div className="mt-12 flex flex-wrap gap-6 justify-center">
-          <Link href="/iching" className="text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors">
-            ☯ 易经问卦
-          </Link>
-          <Link href="/zodiac" className="text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100 transition-colors">
-            ✨ 星座运势
-          </Link>
-          <Link href="/diet" className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 transition-colors">
-            🥗 能量饮食
-          </Link>
-        </div>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

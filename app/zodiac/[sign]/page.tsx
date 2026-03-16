@@ -1,14 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { use } from 'react';
 import { ZODIAC_SIGNS, getZodiacSign } from '@/lib/zodiac/data';
 import { generateDailyFortune, type DailyFortune } from '@/lib/zodiac/fortune';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 import { useToast } from '@/components/Toast';
-import RadarChart from '@/components/RadarChart';
 import { Skeleton } from '@/components/Skeleton';
+
+// 动态导入重型组件
+const RadarChart = dynamic(() => import('@/components/RadarChart'), {
+  loading: () => <div className="h-64 flex items-center justify-center"><Skeleton className="w-full h-full" /></div>,
+  ssr: false
+})
 
 interface PageProps {
   params: Promise<{

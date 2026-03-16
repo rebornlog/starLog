@@ -1,10 +1,24 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { PrismaClient } from '@prisma/client'
 import { getCachedRecentPosts, setCachedRecentPosts } from '@/lib/redis'
 import { Metadata } from 'next'
 import Breadcrumb from '@/components/Breadcrumb'
 
 const prisma = new PrismaClient()
+
+// 网站统计卡片组件
+function StatCard({ icon, label, value }: { icon: string; label: string; value: number | string }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-emerald-100 dark:border-emerald-900 hover:shadow-xl transition-shadow">
+      <div className="text-3xl sm:text-4xl mb-2">{icon}</div>
+      <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">{label}</div>
+    </div>
+  )
+}
 
 export const metadata: Metadata = {
   title: 'starLog - 个人知识库 | 技术博客·星座运势·易经问卦·能量饮食',
@@ -35,7 +49,7 @@ async function getRecentPosts() {
     const posts = await prisma.post.findMany({
       where: { isPublished: true },
       orderBy: { publishedAt: 'desc' },
-      take: 3,
+      take: 5, // 增加到 5 篇
       select: {
         id: true,
         slug: true,
@@ -50,7 +64,7 @@ async function getRecentPosts() {
     })
 
     if (posts.length > 0) {
-      await setCachedRecentPosts(posts, 3)
+      await setCachedRecentPosts(posts, 5)
       console.log('✅ 首页文章：已缓存到 Redis')
     }
 
@@ -89,6 +103,17 @@ export default async function Home() {
       external: false,
     },
     {
+      icon: '💰',
+      title: '基金市场',
+      description: '实时净值查询\n支持导入导出',
+      color: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30',
+      borderColor: 'border-emerald-200 dark:border-emerald-800',
+      textColor: 'text-emerald-800 dark:text-emerald-200',
+      linkColor: 'text-emerald-600 dark:text-emerald-400',
+      href: '/funds',
+      external: false,
+    },
+    {
       icon: '✨',
       title: '星座运势',
       description: '十二星座每日运势查询\n爱情·事业·财运·幸运色',
@@ -123,6 +148,7 @@ export default async function Home() {
   const topics = [
     { icon: '📚', name: '技术', href: '/blog?category=tech' },
     { icon: '📈', name: '金融', href: '/stocks/' },
+    { icon: '💰', name: '基金', href: '/funds' },
     { icon: '✨', name: '星座', href: '/zodiac' },
     { icon: '☯', name: '问卦', href: '/iching' },
     { icon: '🥗', name: '饮食', href: '/diet' },
@@ -181,6 +207,31 @@ export default async function Home() {
             每一篇笔记都是一颗种子，终将长成参天大树
           </p>
 
+          {/* 搜索框 */}
+          <div className="max-w-2xl mx-auto mb-8 sm:mb-12">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full blur opacity-25 group-hover:opacity-40 transition-opacity" />
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="搜索文章、股票、标签..."
+                  className="w-full px-6 py-4 pl-12 rounded-full border-2 border-emerald-200 dark:border-emerald-800 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition-all outline-none"
+                />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg hover:shadow-xl">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                </button>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                  🔍
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                按 <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">⌘K</kbd> 快速搜索
+              </p>
+            </div>
+          </div>
+
           {/* 主题标签导航 */}
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8 sm:mb-12">
             {topics.map((topic) => (
@@ -217,6 +268,14 @@ export default async function Home() {
             ))}
           </div>
 
+          {/* 网站统计 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12 sm:mb-16">
+            <StatCard icon="📝" label="文章总数" value={2} />
+            <StatCard icon="👁️" label="总阅读量" value={46} />
+            <StatCard icon="📈" label="股票数量" value={30} />
+            <StatCard icon="⭐" label="收藏次数" value={0} />
+          </div>
+
           {/* 最新文章预览 */}
           <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-amber-200 dark:border-amber-800 shadow-inner mb-12 sm:mb-16">
             <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -224,12 +283,15 @@ export default async function Home() {
                 <span className="text-2xl sm:text-3xl">📝</span>
                 <h2 className="text-xl sm:text-2xl font-bold text-amber-800 dark:text-amber-200">最新文章</h2>
               </div>
-              <Link
-                href="/blog"
-                className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
-              >
-                查看更多 →
-              </Link>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500 dark:text-gray-400">共 {recentPosts.length} 篇</span>
+                <Link
+                  href="/blog"
+                  className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
+                >
+                  查看更多 →
+                </Link>
+              </div>
             </div>
             
             {recentPosts.length === 0 ? (
@@ -286,10 +348,15 @@ export default async function Home() {
             <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-6">
               {/* 头像 */}
               <div className="relative flex-shrink-0">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 p-1 shadow-lg">
-                  <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-4xl sm:text-5xl md:text-6xl">
-                    🐷
-                  </div>
+                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 p-1 shadow-lg overflow-hidden">
+                  <Image
+                    src="/avatar.jpg"
+                    alt="老柱子"
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
                 </div>
                 <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 text-3xl sm:text-4xl animate-bounce">✨</div>
               </div>
@@ -335,6 +402,24 @@ export default async function Home() {
                 <span className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300">Email</span>
               </a>
             </div>
+          </div>
+        </div>
+
+        {/* 热门标签 */}
+        <div className="mb-12 sm:mb-16">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+            <span>🏷️</span> 热门标签
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {['Next.js', 'React', 'TypeScript', 'Redis', '性能优化', 'Elasticsearch', 'Java', '多线程', 'A 股', '星座运势', '易经', '能量饮食'].map((tag) => (
+              <Link
+                key={tag}
+                href={`/blog?tag=${encodeURIComponent(tag)}`}
+                className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors border border-emerald-200 dark:border-emerald-800"
+              >
+                #{tag}
+              </Link>
+            ))}
           </div>
         </div>
       </main>

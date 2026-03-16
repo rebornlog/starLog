@@ -4,6 +4,92 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
+// API 代理配置 - 顶层定义，确保生效（排除 Next.js 原生 API 路由）
+async function rewrites() {
+  return [
+    {
+      source: '/api/search/:path*',
+      destination: '/api/search/:path*',
+    },
+    {
+      source: '/api/posts/:path*',
+      destination: '/api/posts/:path*',
+    },
+    {
+      source: '/api/stocks/:path*',
+      destination: 'http://localhost:8081/api/stocks/:path*',
+    },
+    {
+      source: '/api/funds/:path*',
+      destination: 'http://localhost:8081/api/funds/:path*',
+    },
+    {
+      source: '/api/market/:path*',
+      destination: 'http://localhost:8081/api/market/:path*',
+    },
+  ]
+}
+
+// Headers 配置
+async function headers() {
+  return [
+    {
+      source: '/static/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        },
+      ],
+    },
+    {
+      source: '/_next/image',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        },
+      ],
+    },
+    {
+      source: '/api/posts/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=300, s-maxage=600, stale-while-revalidate=900',
+        },
+      ],
+    },
+    {
+      source: '/api/search/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
+        },
+      ],
+    },
+    {
+      source: '/api/stocks/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=60, s-maxage=120, stale-while-revalidate=180',
+        },
+      ],
+    },
+    {
+      source: '/api/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
+        },
+      ],
+    },
+  ]
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -13,6 +99,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
+  // 顶层 rewrites 配置 - 确保在包装器外部生效
+  rewrites,
+  headers,
+  
   // 图片优化配置
   images: {
     formats: ['image/webp', 'image/avif'],
@@ -21,7 +111,6 @@ const nextConfig = {
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: false,
     contentDispositionType: 'attachment',
-    // 远程图片域名（CDN）
     remotePatterns: [
       {
         protocol: 'https',
@@ -41,75 +130,8 @@ const nextConfig = {
   
   // 性能优化
   poweredByHeader: false,
-  
-  // 缓存配置
-  headers: async () => [
-    {
-      // 静态资源：长期缓存（1 年）
-      source: '/static/:path*',
-      headers: [
-        {
-          key: 'Cache-Control',
-          value: 'public, max-age=31536000, immutable',
-        },
-      ],
-    },
-    {
-      // 图片资源：长期缓存
-      source: '/_next/image',
-      headers: [
-        {
-          key: 'Cache-Control',
-          value: 'public, max-age=31536000, immutable',
-        },
-      ],
-    },
-    {
-      // API 响应：短期缓存
-      source: '/api/:path*',
-      headers: [
-        {
-          key: 'Cache-Control',
-          value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
-        },
-      ],
-    },
-  ],
 }
 
 module.exports = withBundleAnalyzer(
-  withContentlayer({
-    ...nextConfig,
-    async headers() {
-      return [
-        {
-          source: '/static/:path*',
-          headers: [
-            {
-              key: 'Cache-Control',
-              value: 'public, max-age=31536000, immutable',
-            },
-          ],
-        },
-        {
-          source: '/_next/image',
-          headers: [
-            {
-              key: 'Cache-Control',
-              value: 'public, max-age=31536000, immutable',
-            },
-          ],
-        },
-        {
-          source: '/api/:path*',
-          headers: [
-            {
-              key: 'Cache-Control',
-              value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
-            },
-          ],
-        },
-      ]
-    },
-  })
+  withContentlayer(nextConfig)
 )

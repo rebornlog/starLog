@@ -45,3 +45,14 @@ yarn-error.log*
 
 # Contentlayer
 .contentlayer
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Build
+tsconfig.tsbuildinfo
+

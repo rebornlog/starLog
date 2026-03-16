@@ -1,11 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import StockChart from '@/components/StockChart'
-import TechnicalIndicators from '@/components/TechnicalIndicators'
 import { useToast } from '@/components/Toast'
+import { Skeleton } from '@/components/Skeleton'
+
+// 动态导入重型组件
+const StockChart = dynamic(() => import('@/components/StockChart'), {
+  loading: () => <div className="h-96 flex items-center justify-center"><Skeleton className="w-full h-full" /></div>,
+  ssr: false
+})
+
+const TechnicalIndicators = dynamic(() => import('@/components/TechnicalIndicators'), {
+  loading: () => <div className="h-48 flex items-center justify-center"><Skeleton className="w-full h-full" /></div>,
+  ssr: false
+})
 
 interface StockData {
   code: string
