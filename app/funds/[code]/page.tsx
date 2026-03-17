@@ -7,6 +7,8 @@ import { funds } from '@/data/funds'
 import { FundDetail } from '@/types/fund'
 import FundChart from '@/components/funds/FundChart'
 import FundManagerCard from '@/components/funds/FundManagerCard'
+import FundFeeTable from '@/components/funds/FundFeeTable'
+import FundProfileCard from '@/components/funds/FundProfileCard'
 
 export default function FundDetailPage() {
   const params = useParams()

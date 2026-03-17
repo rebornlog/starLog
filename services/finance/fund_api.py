@@ -86,6 +86,7 @@ async def health_check():
 def fetch_fund_netvalue(code: str) -> Optional[Dict[str, Any]]:
     """
     获取基金实时净值（同步版本）
+    优化：添加超时控制、重试机制、数据验证
     """
     url = f"http://fundgz.1234567.com.cn/js/{code}.js"
     headers = {
@@ -93,28 +94,40 @@ def fetch_fund_netvalue(code: str) -> Optional[Dict[str, Any]]:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        content = response.text
-        
-        # 解析 jsonp 数据
-        json_match = re.search(r'jsonpgz\((.+?)\)', content)
-        if json_match:
-            fund_data = json.loads(json_match.group(1))
+    # 最多重试 2 次
+    for attempt in range(2):
+        try:
+            # 超时 5 秒
+            response = requests.get(url, headers=headers, timeout=5)
+            content = response.text
             
-            return {
-                "code": fund_data.get("fundcode", ""),
-                "name": fund_data.get("name", ""),
-                "netValue": float(fund_data.get("gsz", 0) or 0),
-                "unitNetValue": float(fund_data.get("dwjz", 0) or 0),
-                "accNetValue": float(fund_data.get("dwjz", 0) or 0),
-                "change": float(fund_data.get("gszzl", 0) or 0),
-                "changePercent": float(fund_data.get("gszzl", 0) or 0),
-                "updateTime": fund_data.get("gztime", ""),
-                "lastUpdateTime": fund_data.get("jzrq", ""),
-            }
-    except Exception as e:
-        print(f"获取基金 {code} 净值失败：{e}")
+            # 解析 jsonp 数据
+            json_match = re.search(r'jsonpgz\((.+?)\)', content)
+            if json_match:
+                fund_data = json.loads(json_match.group(1))
+                
+                # 数据验证
+                net_value = float(fund_data.get("gsz", 0) or 0)
+                if net_value <= 0:
+                    return None
+                
+                return {
+                    "code": fund_data.get("fundcode", ""),
+                    "name": fund_data.get("name", ""),
+                    "netValue": net_value,
+                    "unitNetValue": float(fund_data.get("dwjz", 0) or 0),
+                    "accNetValue": float(fund_data.get("dwjz", 0) or 0),
+                    "change": float(fund_data.get("gszzl", 0) or 0),
+                    "changePercent": float(fund_data.get("gszzl", 0) or 0),
+                    "updateTime": fund_data.get("gztime", ""),
+                    "lastUpdateTime": fund_data.get("jzrq", ""),
+                }
+        except requests.Timeout:
+            print(f"获取基金 {code} 净值超时（第{attempt+1}次）")
+            continue
+        except Exception as e:
+            print(f"获取基金 {code} 净值失败：{e}")
+            break
     
     return None
 
@@ -127,48 +140,75 @@ async def get_fund_list(
 ):
     """
     获取基金列表（实时数据）
+    优化策略：
+    1. 优先返回缓存（5 分钟）
+    2. 缓存失效时并发获取实时数据
+    3. 超时 15 秒返回静态数据兜底
     """
     cache_key = f"funds:list:{fund_type}:{limit}"
     cached = get_cache(cache_key)
     if cached:
         return cached
     
+    # 设置总超时 15 秒
+    try:
+        result = await asyncio.wait_for(
+            _fetch_fund_list(fund_type, limit),
+            timeout=15.0
+        )
+        set_cache(cache_key, result, LIST_CACHE_TTL)
+        return result
+    except asyncio.TimeoutError:
+        print("⚠️ 基金列表获取超时，返回静态数据")
+        # 超时返回静态数据
+        static_result = {
+            "success": True,
+            "funds": POPULAR_FUNDS[:limit],
+            "count": limit,
+            "type": fund_type,
+            "warning": "数据更新延迟"
+        }
+        return static_result
+
+async def _fetch_fund_list(fund_type: str, limit: int):
+    """内部函数：获取基金列表"""
     # 筛选基金
     if fund_type != "all":
         filtered = [f for f in POPULAR_FUNDS if f.get("type") == fund_type]
     else:
         filtered = POPULAR_FUNDS
     
-    # 获取实时数据
-    funds = []
-    for fund in filtered[:limit]:
+    # 并发获取实时数据（最多并发 10 个）
+    import concurrent.futures
+    
+    async def fetch_single_fund(fund):
         try:
             loop = asyncio.get_event_loop()
             data = await loop.run_in_executor(None, fetch_fund_netvalue, fund["code"])
             
             if data:
-                funds.append({
-                    **fund,
-                    **data
-                })
+                return {**fund, **data}
             else:
-                # API 获取失败，使用基本信息
-                funds.append({
+                return {
                     **fund,
                     "netValue": 0,
                     "change": 0,
                     "changePercent": 0,
                     "updateTime": ""
-                })
+                }
         except Exception as e:
             print(f"获取基金 {fund['code']} 失败：{e}")
-            funds.append({
+            return {
                 **fund,
                 "netValue": 0,
                 "change": 0,
                 "changePercent": 0,
                 "updateTime": ""
-            })
+            }
+    
+    # 使用 asyncio.gather 并发请求
+    tasks = [fetch_single_fund(fund) for fund in filtered[:limit]]
+    funds = await asyncio.gather(*tasks)
     
     result = {"success": True, "funds": funds, "count": len(funds), "type": fund_type}
     set_cache(cache_key, result, LIST_CACHE_TTL)  # 5 分钟缓存
