@@ -183,37 +183,43 @@ export default function FundDetailPage() {
 
           <div className="p-6">
             {activeTab === 'info' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">基金类型</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{fund.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">基金公司</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{fund.company}</p>
-                  </div>
-                  {fund.manager && (
-                    <>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">基金经理</p>
-                        <p className="text-gray-900 dark:text-white font-medium">{fund.manager}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">基金规模</p>
-                        <p className="text-gray-900 dark:text-white font-medium">{fund.scale ? `${fund.scale}亿` : '-'}</p>
-                      </div>
-                    </>
-                  )}
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">风险等级</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{fund.riskLevel}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">成立日期</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{fund.establishDate || '-'}</p>
-                  </div>
-                </div>
+              <div className="space-y-6">
+                {/* 基金经理卡片 */}
+                {fund.manager && (
+                  <FundManagerCard
+                    name={fund.manager}
+                    company={fund.company}
+                    experience="8 年"
+                    manageDate="2020-01"
+                    returnRate="+15.8%"
+                    otherFunds={[
+                      { code: '000001', name: '易方达优质精选' },
+                    ]}
+                  />
+                )}
+
+                {/* 基金档案卡片 */}
+                <FundProfileCard
+                  establishDate={fund.establishDate || '2018-01-15'}
+                  fundSize={fund.scale ? `${fund.scale}亿` : '50.2 亿'}
+                  minPurchase="10 元"
+                  fundType={fund.type}
+                  riskLevel={fund.riskLevel}
+                  purchaseStatus="open"
+                  dividendOption="现金分红/红利再投资"
+                  fundCode={fund.code}
+                  manager={fund.manager}
+                  company={fund.company}
+                />
+
+                {/* 基金费率表格 */}
+                <FundFeeTable
+                  purchaseFee="1.50%"
+                  redemptionFee="0.50%"
+                  managementFee="1.50%"
+                  custodyFee="0.25%"
+                  serviceFee="0.50%"
+                />
               </div>
             )}
 

@@ -36,8 +36,8 @@ except:
     redis_client = None
     REDIS_AVAILABLE = False
 
-CACHE_TTL = 3600  # 基金数据 1 小时缓存（减少 API 调用）
-LIST_CACHE_TTL = 300  # 列表数据 5 分钟缓存
+CACHE_TTL = 3600  # 基金详情 1 小时缓存
+LIST_CACHE_TTL = 600  # 基金列表 10 分钟缓存（减少外部 API 调用）
 
 # 热门基金列表
 POPULAR_FUNDS = [
