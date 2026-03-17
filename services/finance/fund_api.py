@@ -153,7 +153,7 @@ async def get_fund_list(
     # 设置总超时 15 秒
     try:
         result = await asyncio.wait_for(
-            _fetch_fund_list(fund_type, limit),
+            _fetch_fund_list(fund_type, limit, cache_key),
             timeout=15.0
         )
         set_cache(cache_key, result, LIST_CACHE_TTL)
@@ -170,7 +170,7 @@ async def get_fund_list(
         }
         return static_result
 
-async def _fetch_fund_list(fund_type: str, limit: int):
+async def _fetch_fund_list(fund_type: str, limit: int, cache_key: str = None):
     """内部函数：获取基金列表"""
     # 筛选基金
     if fund_type != "all":
@@ -178,9 +178,7 @@ async def _fetch_fund_list(fund_type: str, limit: int):
     else:
         filtered = POPULAR_FUNDS
     
-    # 并发获取实时数据（最多并发 10 个）
-    import concurrent.futures
-    
+    # 并发获取实时数据
     async def fetch_single_fund(fund):
         try:
             loop = asyncio.get_event_loop()
