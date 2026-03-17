@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { createChart, IChartApi, ISeriesApi, Time } from 'lightweight-charts'
-import { useEffect, useRef } from 'react'
 
 interface CalculationResult {
   month: number
@@ -18,7 +16,6 @@ export default function SipCalculatorPage() {
   const [years, setYears] = useState(3)
   const [annualRate, setAnnualRate] = useState(8)
   const [results, setResults] = useState<CalculationResult[]>([])
-  const chartContainerRef = useRef<HTMLDivElement>(null)
 
   // 计算定投收益
   const calculate = () => {
@@ -45,67 +42,7 @@ export default function SipCalculatorPage() {
     setResults(newResults)
   }
 
-  // 初始化图表
-  useEffect(() => {
-    if (results.length === 0 || !chartContainerRef.current) return
 
-    const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
-      height: 400,
-      layout: {
-        background: { type: 'solid', color: 'transparent' },
-        textColor: '#9CA3AF',
-      },
-      grid: {
-        vertLines: { color: 'rgba(192, 196, 204, 0.2)' },
-        horzLines: { color: 'rgba(192, 196, 204, 0.2)' },
-      },
-      rightPriceScale: {
-        borderColor: 'rgba(192, 196, 204, 0.4)',
-      },
-      timeScale: {
-        borderColor: 'rgba(192, 196, 204, 0.4)',
-        timeVisible: false,
-      },
-    })
-
-    // 投入本金线
-    const investedSeries = chart.addAreaSeries({
-      color: '#9CA3AF',
-      topColor: 'rgba(156, 163, 175, 0.2)',
-      bottomColor: 'rgba(156, 163, 175, 0)',
-      lineWidth: 2,
-      lineStyle: 2,
-    })
-
-    // 总资产线
-    const valueSeries = chart.addAreaSeries({
-      color: '#3B82F6',
-      topColor: 'rgba(59, 130, 246, 0.3)',
-      bottomColor: 'rgba(59, 130, 246, 0)',
-      lineWidth: 3,
-    })
-
-    investedSeries.setData(
-      results.map(r => ({ time: r.month as Time, value: r.invested }))
-    )
-    valueSeries.setData(
-      results.map(r => ({ time: r.month as Time, value: r.value }))
-    )
-
-    // 自适应
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth })
-      }
-    }
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      chart.remove()
-    }
-  }, [results])
 
   // 自动计算
   useEffect(() => {
@@ -266,22 +203,48 @@ export default function SipCalculatorPage() {
           </div>
         )}
 
-        {/* 图表展示 */}
+        {/* 图表展示 - 简化版 CSS 图表 */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            📉 收益走势
+            📈 收益走势（简化版）
           </h2>
-          <div ref={chartContainerRef} className="w-full" />
+          <div className="h-64 flex items-end gap-1 border-b border-l border-gray-300 dark:border-gray-600 pb-2">
+            {results.filter((_, i) => i % Math.ceil(results.length / 24) === 0).map((result, idx, arr) => {
+              const maxValue = Math.max(...results.map(r => r.value))
+              const heightPercent = (result.value / maxValue) * 100
+              const investedHeightPercent = (result.invested / maxValue) * 100
+              
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-0.5">
+                  <div className="w-full flex flex-col justify-end gap-0.5" style={{ height: `${heightPercent}%` }}>
+                    <div 
+                      className="w-full bg-blue-500/30 rounded-t"
+                      style={{ height: `${investedHeightPercent}%` }}
+                      title={`本金：¥${result.invested.toFixed(0)}`}
+                    />
+                    <div 
+                      className="w-full bg-blue-500 rounded-b"
+                      style={{ height: `calc(100% - ${investedHeightPercent}%)` }}
+                      title={`收益：¥${result.profit.toFixed(0)}`}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
           <div className="mt-4 flex items-center justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-gray-400 rounded"></div>
+              <div className="w-4 h-4 bg-blue-500/30 rounded"></div>
               <span className="text-gray-600 dark:text-gray-400">投入本金</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-blue-500 rounded"></div>
-              <span className="text-gray-600 dark:text-gray-400">总资产</span>
+              <div className="w-4 h-4 bg-blue-500 rounded"></div>
+              <span className="text-gray-600 dark:text-gray-400">累计收益</span>
             </div>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+            💡 柱状图高度表示总资产，浅色部分为本金，深色部分为收益
+          </p>
         </div>
 
         {/* 详细数据表 */}
