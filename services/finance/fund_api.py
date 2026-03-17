@@ -36,7 +36,8 @@ except:
     redis_client = None
     REDIS_AVAILABLE = False
 
-CACHE_TTL = 2700  # 基金数据 45 分钟缓存（减少 API 调用）
+CACHE_TTL = 3600  # 基金数据 1 小时缓存（减少 API 调用）
+LIST_CACHE_TTL = 300  # 列表数据 5 分钟缓存
 
 # 热门基金列表
 POPULAR_FUNDS = [
@@ -170,7 +171,7 @@ async def get_fund_list(
             })
     
     result = {"success": True, "funds": funds, "count": len(funds), "type": fund_type}
-    set_cache(cache_key, result, 300)  # 5 分钟缓存
+    set_cache(cache_key, result, LIST_CACHE_TTL)  # 5 分钟缓存
     return result
 
 @app.post("/api/funds/batch")

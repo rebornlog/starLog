@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { funds } from '@/data/funds'
 import { FundDetail } from '@/types/fund'
 import FundChart from '@/components/funds/FundChart'
+import FundManagerCard from '@/components/funds/FundManagerCard'
 
 export default function FundDetailPage() {
   const params = useParams()
@@ -125,6 +126,23 @@ export default function FundDetailPage() {
             </div>
           )}
         </div>
+
+        {/* 基金经理卡片 */}
+        {fund.manager && (
+          <div className="mb-6">
+            <FundManagerCard
+              name={fund.manager}
+              company={fund.company}
+              experience="8 年"
+              manageDate="2020-01-15"
+              returnRate="+15.8%"
+              otherFunds={[
+                { code: '000001', name: '其他基金 A' },
+                { code: '000002', name: '其他基金 B' }
+              ]}
+            />
+          </div>
+        )}
 
         {/* 选项卡 */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-6">
