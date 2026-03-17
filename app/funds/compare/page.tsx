@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import FundChart from './FundChart'
+import FundChart from '@/components/funds/FundChart'
 
 interface Fund {
   code: string

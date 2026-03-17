@@ -62,21 +62,26 @@ export default function FundDetailPage() {
 
         {/* 基金基本信息 */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 {fund.name}
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-lg">{fund.code}</p>
+              <p className="text-gray-500 dark:text-gray-400 text-base">{fund.code}</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                ¥{fund.netValue.toFixed(4)}
+              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1">
+                ¥{fund.netValue > 0 ? fund.netValue.toFixed(4) : '--'}
               </div>
               <div className={`text-xl font-semibold ${
-                fund.changePercent >= 0 ? 'text-red-500' : 'text-green-500'
+                fund.changePercent > 0 ? 'text-red-500' : 
+                fund.changePercent < 0 ? 'text-green-500' : 'text-gray-400'
               }`}>
-                {fund.change >= 0 ? '↑' : '↓'} {Math.abs(fund.change).toFixed(4)} ({Math.abs(fund.changePercent).toFixed(2)}%)
+                {fund.changePercent !== 0 ? (
+                  <>{fund.changePercent > 0 ? '↑' : '↓'} {Math.abs(fund.changePercent).toFixed(2)}%</>)
+                : (
+                  <span className="text-gray-400">--</span>
+                )}
               </div>
             </div>
           </div>

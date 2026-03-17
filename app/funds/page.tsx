@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Fund, FundType, RiskLevel } from '@/types/fund'
+import FundCardSkeleton from '@/components/funds/FundCardSkeleton'
 
 const FUND_TYPES: (FundType | '全部')[] = ['全部', '股票型', '混合型', '债券型', '货币型', 'QDII', '指数型']
 const RISK_LEVELS: (RiskLevel | '全部')[] = ['全部', '低', '中低', '中', '中高', '高']
@@ -305,10 +306,11 @@ export default function FundsPage() {
         {/* 基金列表 */}
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
           {loading && funds.length === 0 ? (
-            <div className="col-span-2 text-center py-12">
-              <div className="text-4xl mb-4">⏳</div>
-              <p className="text-gray-600 dark:text-gray-400">正在加载基金数据...</p>
-            </div>
+            <>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <FundCardSkeleton key={i} />
+              ))}
+            </>
           ) : filteredFunds.length === 0 ? (
             <div className="col-span-2 text-center py-12">
               <div className="text-4xl mb-4">😕</div>
@@ -347,11 +349,11 @@ export default function FundsPage() {
                   className="block"
                 >
                 <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-base text-gray-900 dark:text-white line-clamp-1">
                       {fund.name}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{fund.code}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{fund.code}</p>
                   </div>
                   {fund.tags?.slice(0, 2).map(tag => (
                     <span
@@ -364,23 +366,30 @@ export default function FundsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">净值</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      ¥{fund.netValue?.toFixed(4) || '0.0000'}
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">净值</span>
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                      ¥{fund.netValue > 0 ? fund.netValue.toFixed(4) : '--'}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">涨跌</span>
-                    <span className={`font-semibold ${
-                      (fund.changePercent || 0) >= 0 ? 'text-red-500' : 'text-green-500'
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">涨跌</span>
+                    <span className={`text-sm font-semibold ${
+                      (fund.changePercent || 0) > 0 ? 'text-red-500' : 
+                      (fund.changePercent || 0) < 0 ? 'text-green-500' : 'text-gray-400'
                     }`}>
-                      {(fund.change || 0) >= 0 ? '↑' : '↓'} {Math.abs(fund.change || 0).toFixed(4)} ({Math.abs(fund.changePercent || 0).toFixed(2)}%)
+                      {(fund.changePercent || 0) !== 0 ? (
+                        <>{(fund.changePercent || 0) > 0 ? '↑' : '↓'} {Math.abs(fund.changePercent || 0).toFixed(2)}%</>
+                      ) : (
+                        '--'
+                      )}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">类型</span>
-                    <span className="text-gray-900 dark:text-white">{fund.type}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">类型</span>
+                    <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                      {fund.type}
+                    </span>
                   </div>
                 </div>
                 </Link>
