@@ -460,58 +460,6 @@ function NumberInput({ onSubmit, onBack }: { onSubmit: (nums: [number, number, n
   );
 }
 
-
-// 可折叠面板组件
-function Accordion({ title, children, defaultOpen = false, icon = '' }: { 
-  title: string; 
-  children: React.ReactNode; 
-  defaultOpen?: boolean;
-  icon?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-8 py-6 flex items-center justify-between hover:bg-amber-50 dark:hover:bg-slate-700/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{icon}</span>
-          <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100">{title}</h3>
-        </div>
-        <div className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-          <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-      
-      {isOpen && (
-        <div className="px-8 pb-6 animate-fade-in">
-          {children}
-        </div>
-      )}
-
-      <style jsx global>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
-        }
-      `}</style>
-    </div>
-  );
-}
-
 // 卦象结果组件
 function HexagramResult({ result, onReset }: { result: any; onReset: () => void }) {
   const { hexagram, character, method, timestamp, interpretation, structure } = result;
@@ -542,28 +490,38 @@ function HexagramResult({ result, onReset }: { result: any; onReset: () => void 
         </div>
       </div>
 
-      {/* 卦辞 - 默认展开 */}
-      <Accordion title="卦辞" defaultOpen={true} icon="📜">
+      {/* 卦辞 */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl">
+        <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-4 flex items-center gap-2">
+          <span className="text-2xl">📜</span>
+          卦辞
+        </h3>
         <p className="text-amber-800 dark:text-amber-200 text-lg leading-relaxed">
           {hexagram.judgment}
         </p>
-      </Accordion>
+      </div>
 
-      {/* 象传 - 默认展开 */}
-      <Accordion title="象传" defaultOpen={true} icon="🌄">
+      {/* 象传 */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl">
+        <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-4 flex items-center gap-2">
+          <span className="text-2xl">🌄</span>
+          象传
+        </h3>
         <p className="text-amber-800 dark:text-amber-200 text-lg leading-relaxed">
           {hexagram.image}
         </p>
-      </Accordion>
+      </div>
 
-      {/* 解读 - 默认展开 */}
-      <Accordion title="解读" defaultOpen={true} icon="🔮">
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-700 dark:to-slate-800 rounded-xl p-6">
-          <pre className="text-amber-800 dark:text-amber-200 whitespace-pre-wrap leading-relaxed font-sans">
-            {interpretation}
-          </pre>
-        </div>
-      </Accordion>
+      {/* 解读 */}
+      <div className="bg-gradient-to-br from-amber-100 to-orange-100 dark:from-slate-700 dark:to-slate-800 rounded-2xl p-8 shadow-xl">
+        <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-4 flex items-center gap-2">
+          <span className="text-2xl">🔮</span>
+          解读
+        </h3>
+        <pre className="text-amber-800 dark:text-amber-200 whitespace-pre-wrap leading-relaxed font-sans">
+          {interpretation}
+        </pre>
+      </div>
 
       {/* 操作按钮 */}
       <div className="flex flex-wrap gap-4 justify-center">
