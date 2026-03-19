@@ -5,7 +5,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 // 基金列表 SWR 配置
 export function useFundList(fundType: string = 'all', limit: number = 100) {
   const { data, error, isLoading, mutate } = useSWR(
-    `http://47.79.20.10:8082/api/funds/list?fund_type=${fundType}&limit=${limit}`,
+    `http://localhost:8081/api/funds/list?fund_type=${fundType}&limit=${limit}`,
     fetcher,
     {
       refreshInterval: 300000, // 5 分钟自动刷新
@@ -33,7 +33,7 @@ export function useFundList(fundType: string = 'all', limit: number = 100) {
 // 基金详情 SWR 配置
 export function useFundDetail(code: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    code ? `http://47.79.20.10:8082/api/funds/${code}` : null,
+    code ? `http://localhost:8081/api/funds/${code}` : null,
     fetcher,
     {
       refreshInterval: 60000, // 1 分钟自动刷新
@@ -53,7 +53,7 @@ export function useFundDetail(code: string) {
 // 基金历史 SWR 配置
 export function useFundHistory(code: string, page: number = 1, size: number = 60) {
   const { data, error, isLoading, mutate } = useSWR(
-    code ? `http://47.79.20.10:8082/api/funds/${code}/history?page=${page}&size=${size}` : null,
+    code ? `http://localhost:8081/api/funds/${code}/history?page=${page}&size=${size}` : null,
     fetcher,
     {
       refreshInterval: false, // 历史数据不自动刷新

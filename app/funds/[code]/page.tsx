@@ -2,13 +2,12 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useState, useMemo, useEffect } from 'react'
-import { funds } from '@/data/funds'
-import { FundDetail } from '@/types/fund'
+import { useState, useEffect } from 'react'
 import FundChart from '@/components/funds/FundChart'
 import FundManagerCard from '@/components/funds/FundManagerCard'
 import FundFeeTable from '@/components/funds/FundFeeTable'
 import FundProfileCard from '@/components/funds/FundProfileCard'
+import { useWatchlist } from '@/hooks/useWatchlist'
 
 export default function FundDetailPage() {
   const params = useParams()
@@ -16,18 +15,31 @@ export default function FundDetailPage() {
   const code = params.code as string
 
   const [activeTab, setActiveTab] = useState<'info' | 'performance' | 'holdings'>('info')
+  const [fund, setFund] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [historyData, setHistoryData] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist()
 
-  const fund = useMemo(() => {
-    return funds.find(f => f.code === code)
+  // 从 API 获取基金数据
+  useEffect(() => {
+    setLoading(true)
+    fetch(`http://47.79.20.10:8081/api/funds/${code}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFund(data)
+        }
+      })
+      .catch(err => console.error('获取基金数据失败:', err))
+      .finally(() => setLoading(false))
   }, [code])
 
   // 获取历史净值数据
   useEffect(() => {
-    if (activeTab === 'performance' && historyData.length === 0 && !loadingHistory) {
+    if (activeTab === 'performance' && historyData.length === 0 && !loadingHistory && fund) {
       setLoadingHistory(true)
-      fetch(`http://47.79.20.10:8082/api/funds/${code}/history?page=1&size=60`)
+      fetch(`http://47.79.20.10:8081/api/funds/${code}/history?page=1&size=60`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.data) {
@@ -37,7 +49,21 @@ export default function FundDetailPage() {
         .catch(err => console.error('获取历史数据失败:', err))
         .finally(() => setLoadingHistory(false))
     }
-  }, [activeTab, code])
+  }, [activeTab, code, fund])
+
+  // 检查是否在自选列表中
+  const inWatchlist = isInWatchlist(code)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">加载基金数据...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!fund) {
     return (
@@ -64,19 +90,19 @@ export default function FundDetailPage() {
         </div>
 
         {/* 基金基本信息 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
             <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 {fund.name}
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-base">{fund.code}</p>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{fund.code}</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1">
                 ¥{fund.netValue > 0 ? fund.netValue.toFixed(4) : '--'}
               </div>
-              <div className={`text-xl font-semibold ${
+              <div className={`text-lg sm:text-xl font-semibold ${
                 fund.changePercent > 0 ? 'text-red-500' : 
                 fund.changePercent < 0 ? 'text-green-500' : 'text-gray-400'
               }`}>
@@ -89,8 +115,8 @@ export default function FundDetailPage() {
             </div>
           </div>
 
-          {/* 标签 */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          {/* 标签和操作按钮 */}
+          <div className="flex flex-wrap gap-2 mb-4 items-center">
             <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm">
               {fund.type}
             </span>
@@ -118,8 +144,36 @@ export default function FundDetailPage() {
             </span>
           </div>
 
+          {/* 操作按钮 */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <button
+              onClick={() => {
+                if (inWatchlist) {
+                  removeFromWatchlist(code)
+                  alert('已从自选移除')
+                } else {
+                  addToWatchlist(code)
+                  alert('已加入自选')
+                }
+              }}
+              className={`px-4 py-3 sm:py-2 rounded-lg transition-colors font-medium min-h-[48px] ${
+                inWatchlist
+                  ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              {inWatchlist ? '⭐ 已在自选' : '➕ 加入自选'}
+            </button>
+            <Link
+              href={`/funds/compare?codes=${code}`}
+              className="px-4 py-3 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium min-h-[48px]"
+            >
+              📊 基金对比
+            </Link>
+          </div>
+
           {fund.tags && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-4">
               {fund.tags.map(tag => (
                 <span key={tag} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs">
                   #{tag}
@@ -367,16 +421,6 @@ export default function FundDetailPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* 操作按钮 */}
-        <div className="flex gap-4">
-          <button className="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium">
-            ➕ 加入自选
-          </button>
-          <button className="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors font-medium">
-            📊 基金对比
-          </button>
         </div>
       </div>
     </div>

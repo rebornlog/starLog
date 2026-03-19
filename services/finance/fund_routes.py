@@ -26,25 +26,25 @@ async def get_funds(
     
     # 类型筛选
     if type and type != "全部":
-        result = [f for f in result if f.type == type]
+        result = [f for f in result if f.get('type') == type]
     
     # 风险等级筛选
     if risk and risk != "全部":
-        result = [f for f in result if f.riskLevel == risk]
+        result = [f for f in result if f.get('riskLevel') == risk]
     
     # 搜索
     if search:
         search_lower = search.lower()
-        result = [f for f in result if search_lower in f.code or search_lower in f.name.lower()]
+        result = [f for f in result if search_lower in f.get('code', '') or search_lower in f.get('name', '').lower()]
     
     # 排序
     reverse = sort_order == "desc"
     if sort_by == "code":
-        result.sort(key=lambda x: x.code, reverse=reverse)
+        result.sort(key=lambda x: x.get('code', ''), reverse=reverse)
     elif sort_by == "netValue":
-        result.sort(key=lambda x: x.netValue, reverse=reverse)
+        result.sort(key=lambda x: x.get('netValue', 0), reverse=reverse)
     elif sort_by == "changePercent":
-        result.sort(key=lambda x: x.changePercent, reverse=reverse)
+        result.sort(key=lambda x: x.get('changePercent', 0), reverse=reverse)
     
     # 限制数量
     result = result[:limit]
@@ -62,7 +62,7 @@ async def get_fund_detail(code: str) -> Dict[str, Any]:
     获取基金详情（实时数据）
     """
     # 先从静态数据找基本信息
-    static_fund = next((f for f in static_funds if f.code == code), None)
+    static_fund = next((f for f in static_funds if f['code'] == code), None)
     
     # 获取实时净值
     try:
@@ -78,10 +78,10 @@ async def get_fund_detail(code: str) -> Dict[str, Any]:
     # 合并数据（实时数据优先）
     if realtime_data:
         fund = {
-            **static_fund,
+            **(static_fund or {}),
             **realtime_data,
             "code": code
-        } if static_fund else realtime_data
+        }
     else:
         fund = static_fund
     

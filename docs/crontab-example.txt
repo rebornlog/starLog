@@ -1,0 +1,38 @@
+# starLog 定时任务配置示例
+# 使用方法：crontab -e，然后粘贴以下内容
+
+# 环境变量
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# ===== 金融数据相关 =====
+
+# 开盘前数据预取（交易日 9:25）
+# 确保开盘时数据最新
+25 9 * * 1-5 cd /home/admin/.openclaw/workspace/starLog && python3 scripts/pre-market-refresh.py >> /tmp/pre-market-refresh.log 2>&1
+
+# 每小时刷新基金数据（交易时间 9:30-15:00）
+# 0 10-14 * * 1-5 cd /home/admin/.openclaw/workspace/starLog && curl -s "http://localhost:8081/api/funds/list?refresh=true" > /dev/null 2>&1
+
+# 每天 15:30 刷新收盘数据
+30 15 * * 1-5 cd /home/admin/.openclaw/workspace/starLog && python3 scripts/refresh-all-data.py >> /tmp/refresh-all-data.log 2>&1
+
+# ===== 系统维护 =====
+
+# 每天凌晨 3 点清理临时文件
+0 3 * * * find /tmp -name "*.log" -mtime +7 -delete
+
+# 每周日凌晨 2 点备份数据库（如果有）
+# 0 2 * * 0 cd /home/admin/.openclaw/workspace/starLog && ./scripts/backup-db.sh
+
+# ===== 监控 =====
+
+# 每 5 分钟检查服务状态
+*/5 * * * * /home/admin/.openclaw/workspace/starLog/monitor-services.sh > /dev/null 2>&1
+
+# ===== 注意事项 =====
+# 1. 修改路径：将 /home/admin/.openclaw/workspace/starLog 替换为实际路径
+# 2. 查看日志：tail -f /tmp/pre-market-refresh.log
+# 3. 测试脚本：python3 scripts/pre-market-refresh.py
+# 4. 查看定时任务：crontab -l
+# 5. 编辑定时任务：crontab -e

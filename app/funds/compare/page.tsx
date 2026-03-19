@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import FundChart from '@/components/funds/FundChart'
 
 interface Fund {
   code: string
@@ -17,24 +16,36 @@ interface Fund {
 
 export default function FundComparePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedFunds, setSelectedFunds] = useState<string[]>([])
   const [fundData, setFundData] = useState<Fund[]>([])
   const [historyData, setHistoryData] = useState<{[key: string]: any[]}>({})
   const [loading, setLoading] = useState(false)
+  const [popularFunds, setPopularFunds] = useState<Fund[]>([])
 
-  // 热门基金列表
-  const popularFunds: Fund[] = [
-    { code: '005827', name: '易方达蓝筹精选混合', type: '股票型', netValue: 1.8737, change: 1.09, changePercent: 1.09, updateTime: '2026-03-16' },
-    { code: '003096', name: '中欧医疗健康混合 C', type: '股票型', netValue: 1.6454, change: 0.88, changePercent: 0.88, updateTime: '2026-03-16' },
-    { code: '260108', name: '景顺长城新兴成长混合 A', type: '股票型', netValue: 1.6444, change: 1.07, changePercent: 1.07, updateTime: '2026-03-16' },
-    { code: '161725', name: '招商中证白酒指数', type: '指数型', netValue: 0, change: 0, changePercent: 0, updateTime: '' },
-    { code: '007119', name: '睿远成长价值混合 A', type: '股票型', netValue: 2.0202, change: 1.95, changePercent: 1.95, updateTime: '2026-03-16' },
-    { code: '001938', name: '中欧时代先锋股票 A', type: '股票型', netValue: 2.059, change: -0.41, changePercent: -0.41, updateTime: '2026-03-16' },
-    { code: '000171', name: '易方达裕丰回报债券 A', type: '债券型', netValue: 1.9558, change: 0.04, changePercent: 0.04, updateTime: '2026-03-16' },
-    { code: '000055', name: '广发纳斯达克 100ETF 联接', type: 'QDII', netValue: 0, change: 0, changePercent: 0, updateTime: '' },
-    { code: '510300', name: '华泰柏瑞沪深 300ETF', type: '指数型', netValue: 4.6812, change: 0.05, changePercent: 0.05, updateTime: '2026-03-16' },
-    { code: '159915', name: '易方达创业板 ETF', type: '指数型', netValue: 3.3477, change: 1.41, changePercent: 1.41, updateTime: '2026-03-16' },
-  ]
+  // 从 URL 参数加载预设的对比基金
+  useEffect(() => {
+    const codesParam = searchParams.get('codes')
+    if (codesParam) {
+      const codes = codesParam.split(',').filter(Boolean)
+      if (codes.length > 0) {
+        setSelectedFunds(codes)
+        setTimeout(() => loadCompareData(codes), 500)
+      }
+    }
+  }, [searchParams])
+
+  // 加载热门基金列表
+  useEffect(() => {
+    fetch('http://47.79.20.10:8081/api/funds/list?fund_type=all&limit=20')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.funds) {
+          setPopularFunds(data.funds.slice(0, 15))
+        }
+      })
+      .catch(err => console.error('加载基金列表失败:', err))
+  }, [])
 
   const toggleFund = (code: string) => {
     if (selectedFunds.includes(code)) {
@@ -48,8 +59,10 @@ export default function FundComparePage() {
     }
   }
 
-  const loadCompareData = async () => {
-    if (selectedFunds.length < 2) {
+  const loadCompareData = async (overrideSelectedFunds?: string[]) => {
+    const fundsToCompare = overrideSelectedFunds || selectedFunds
+    
+    if (fundsToCompare.length < 2) {
       alert('请至少选择 2 只基金进行对比')
       return
     }
@@ -57,8 +70,8 @@ export default function FundComparePage() {
     setLoading(true)
     try {
       // 获取历史数据
-      const promises = selectedFunds.map(async (code) => {
-        const res = await fetch(`http://47.79.20.10:8082/api/funds/${code}/history?page=1&size=30`)
+      const promises = fundsToCompare.map(async (code) => {
+        const res = await fetch(`http://47.79.20.10:8081/api/funds/${code}/history?page=1&size=30`)
         const data = await res.json()
         return { code, history: data.data || [] }
       })
@@ -70,8 +83,26 @@ export default function FundComparePage() {
       })
       setHistoryData(historyMap)
 
-      // 获取基金基本信息
-      const fundsData = popularFunds.filter(f => selectedFunds.includes(f.code))
+      // 获取基金基本信息（从 API）
+      const fundsPromises = fundsToCompare.map(async (code) => {
+        const res = await fetch(`http://47.79.20.10:8081/api/funds/${code}`)
+        const data = await res.json()
+        return data.success ? data : null
+      })
+
+      const fundsResults = await Promise.all(fundsPromises)
+      const fundsData = fundsResults
+        .filter(f => f !== null)
+        .map(f => ({
+          code: f.code,
+          name: f.name,
+          type: f.type || '混合型',
+          netValue: f.netValue || 0,
+          change: f.change || 0,
+          changePercent: f.changePercent || 0,
+          updateTime: f.updateTime
+        }))
+      
       setFundData(fundsData)
     } catch (error) {
       console.error('加载对比数据失败:', error)
@@ -90,7 +121,6 @@ export default function FundComparePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
-        {/* 返回按钮 */}
         <div className="mb-6">
           <Link href="/funds" className="text-blue-600 dark:text-blue-400 hover:underline">
             ← 返回基金列表
@@ -106,12 +136,12 @@ export default function FundComparePage() {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             选择基金（最多 5 只）
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {popularFunds.map((fund) => (
               <div
                 key={fund.code}
                 onClick={() => toggleFund(fund.code)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`p-4 sm:p-5 rounded-lg border-2 cursor-pointer transition-all min-h-[44px] ${
                   selectedFunds.includes(fund.code)
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                     : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
@@ -139,9 +169,9 @@ export default function FundComparePage() {
                     {fund.type}
                   </span>
                   <span className={`text-sm font-medium ${
-                    fund.changePercent >= 0 ? 'text-red-500' : 'text-green-500'
+                    (fund.changePercent || 0) >= 0 ? 'text-red-500' : 'text-green-500'
                   }`}>
-                    {fund.changePercent >= 0 ? '+' : ''}{fund.changePercent.toFixed(2)}%
+                    {(fund.changePercent || 0) >= 0 ? '+' : ''}{(fund.changePercent || 0).toFixed(2)}%
                   </span>
                 </div>
               </div>
@@ -150,7 +180,7 @@ export default function FundComparePage() {
 
           <div className="flex gap-4">
             <button
-              onClick={loadCompareData}
+              onClick={() => loadCompareData()}
               disabled={selectedFunds.length < 2 || loading}
               className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
@@ -168,12 +198,14 @@ export default function FundComparePage() {
         {/* 对比结果 */}
         {fundData.length > 0 && (
           <>
-            {/* 关键指标对比表 */}
+            {/* 关键指标对比 - 桌面端表格，移动端卡片 */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 📈 关键指标对比
               </h2>
-              <div className="overflow-x-auto">
+              
+              {/* 桌面端：表格布局 */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
@@ -199,17 +231,24 @@ export default function FundComparePage() {
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">日涨跌</td>
                       {fundData.map((fund) => (
                         <td key={fund.code} className={`px-4 py-3 text-center text-sm font-medium ${
-                          fund.changePercent >= 0 ? 'text-red-500' : 'text-green-500'
+                          (fund.changePercent || 0) > 0 ? 'text-red-500' : 
+                          (fund.changePercent || 0) < 0 ? 'text-green-500' : 'text-gray-400'
                         }`}>
-                          {fund.changePercent > 0 ? '+' : ''}{fund.changePercent.toFixed(2)}%
+                          {(fund.changePercent || 0) !== 0 ? (
+                            <>{(fund.changePercent || 0) > 0 ? '↑' : '↓'} {Math.abs(fund.changePercent || 0).toFixed(2)}%</>)
+                          : (
+                            <span className="text-gray-400">--</span>
+                          )}
                         </td>
                       ))}
                     </tr>
                     <tr className="border-t border-gray-200 dark:border-gray-700">
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">基金类型</td>
                       {fundData.map((fund) => (
-                        <td key={fund.code} className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
-                          {fund.type}
+                        <td key={fund.code} className="px-4 py-3 text-center">
+                          <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                            {fund.type}
+                          </span>
                         </td>
                       ))}
                     </tr>
@@ -224,34 +263,103 @@ export default function FundComparePage() {
                   </tbody>
                 </table>
               </div>
-            </div>
 
-            {/* 业绩走势对比图 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                📉 近 30 日业绩走势对比
-              </h2>
-              <div className="space-y-6">
+              {/* 移动端：卡片布局 */}
+              <div className="md:hidden space-y-4">
                 {fundData.map((fund) => (
-                  <div key={fund.code} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      {fund.name} ({fund.code})
-                    </h3>
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                      {historyData[fund.code] && historyData[fund.code].length > 0 ? (
-                        <FundChart data={historyData[fund.code]} height={200} />
-                      ) : (
-                        <div className="flex items-center justify-center" style={{ height: 200 }}>
-                          <p className="text-gray-500 dark:text-gray-400">暂无历史数据</p>
-                        </div>
-                      )}
+                  <div
+                    key={fund.code}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900/50"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{fund.name}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{fund.code}</p>
+                      </div>
+                      <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                        {fund.type}
+                      </span>
                     </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white dark:bg-gray-800 rounded p-3 text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">单位净值</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                          {fund.netValue > 0 ? fund.netValue.toFixed(4) : '-'}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white dark:bg-gray-800 rounded p-3 text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">日涨跌</p>
+                        <p className={`text-lg font-bold ${
+                          (fund.changePercent || 0) > 0 ? 'text-red-500' : 
+                          (fund.changePercent || 0) < 0 ? 'text-green-500' : 'text-gray-400'
+                        }`}>
+                          {(fund.changePercent || 0) !== 0 ? (
+                            <>{(fund.changePercent || 0) > 0 ? '↑' : '↓'} {Math.abs(fund.changePercent || 0).toFixed(2)}%</>)
+                          : (
+                            <span className="text-gray-400">--</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {fund.updateTime && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
+                        更新于 {fund.updateTime}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* 历史业绩对比图 */}
+            {Object.keys(historyData).length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  📊 近 30 日业绩走势对比
+                </h2>
+                <div className="h-64 flex items-end gap-2">
+                  {Object.entries(historyData).map(([code, history]) => {
+                    const latestPoint = history[0]
+                    const oldestPoint = history[history.length - 1]
+                    // 修复：使用正确的字段名（API 返回 unitValue 或 value 或 netValue）
+                    const latestValue = latestPoint?.unitValue || latestPoint?.value || latestPoint?.netValue || 0
+                    const oldestValue = oldestPoint?.unitValue || oldestPoint?.value || oldestPoint?.netValue || 0
+                    const growth = latestValue && oldestValue 
+                      ? (((latestValue - oldestValue) / oldestValue) * 100).toFixed(2)
+                      : '0.00'
+                    
+                    return (
+                      <div key={code} className="flex-1 text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          {popularFunds.find(f => f.code === code)?.name || code}
+                        </div>
+                        <div className={`text-lg font-bold ${
+                          parseFloat(growth as string) > 0 ? 'text-red-500' : 
+                          parseFloat(growth as string) < 0 ? 'text-green-500' : 'text-gray-400'
+                        }`}>
+                          {growth}%
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          近 30 日涨幅
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
+
+        {/* 返回链接 */}
+        <div className="text-center mt-8">
+          <Link href="/" className="text-blue-600 dark:text-blue-400 hover:underline">
+            ← 返回首页
+          </Link>
+        </div>
       </div>
     </div>
   )

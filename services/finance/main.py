@@ -13,6 +13,8 @@ import redis
 import json
 from datetime import datetime, time
 import random
+import threading
+from collections import OrderedDict
 
 app = FastAPI(
     title="starLog Finance API",
@@ -38,6 +40,79 @@ except:
     REDIS_AVAILABLE = False
 
 CACHE_TTL = 300  # 5 分钟缓存
+
+# ============ 分层缓存 ============
+# L1: 内存缓存（1 分钟 TTL，减少 Redis 访问）
+# L2: Redis 缓存（5 分钟 TTL，持久化缓存）
+
+class MemoryCache:
+    """内存缓存（L1 缓存）"""
+    def __init__(self, max_size=100, ttl=60):
+        self.cache = OrderedDict()
+        self.max_size = max_size
+        self.ttl = ttl  # 秒
+        self.lock = threading.Lock()
+    
+    def get(self, key: str) -> Optional[Any]:
+        with self.lock:
+            if key not in self.cache:
+                return None
+            value, timestamp = self.cache[key]
+            if datetime.now().timestamp() - timestamp > self.ttl:
+                del self.cache[key]
+                return None
+            # LRU: 移到末尾
+            self.cache.move_to_end(key)
+            return value
+    
+    def set(self, key: str, value: Any) -> None:
+        with self.lock:
+            if key in self.cache:
+                self.cache.move_to_end(key)
+            self.cache[key] = (value, datetime.now().timestamp())
+            # 超出容量时删除最旧的
+            if len(self.cache) > self.max_size:
+                self.cache.popitem(last=False)
+    
+    def clear(self):
+        with self.lock:
+            self.cache.clear()
+
+# 初始化内存缓存
+memory_cache = MemoryCache(max_size=100, ttl=60)
+
+def get_cache(key: str) -> Optional[Any]:
+    """分层缓存获取：先 L1 内存，再 L2 Redis"""
+    # L1: 内存缓存
+    data = memory_cache.get(key)
+    if data is not None:
+        return data
+    
+    # L2: Redis 缓存
+    if not REDIS_AVAILABLE:
+        return None
+    try:
+        data = redis_client.get(key)
+        result = json.loads(data) if data else None
+        # 回填到 L1
+        if result is not None:
+            memory_cache.set(key, result)
+        return result
+    except:
+        return None
+
+def set_cache(key: str, data: Any, ttl: int = CACHE_TTL) -> None:
+    """分层缓存设置：同时写入 L1 和 L2"""
+    # L1: 内存缓存
+    memory_cache.set(key, data)
+    
+    # L2: Redis 缓存
+    if not REDIS_AVAILABLE:
+        return
+    try:
+        redis_client.setex(key, ttl, json.dumps(data, ensure_ascii=False))
+    except:
+        pass
 
 # 热门股票列表（固定）
 POPULAR_STOCKS = [
@@ -260,12 +335,24 @@ POPULAR_FUNDS = [
 ]
 
 @app.get("/api/funds/list")
-async def get_fund_list(fund_type: str = "hh", limit: int = 50):
-    """获取基金列表（热门基金 + 实时数据）"""
+async def get_fund_list(fund_type: str = "hh", limit: int = 50, refresh: bool = False):
+    """
+    获取基金列表（热门基金 + 实时数据）
+    
+    分层缓存策略：
+    - L1 内存缓存：60 秒 TTL
+    - L2 Redis 缓存：300 秒 TTL
+    - 支持强制刷新（refresh=true）
+    """
     cache_key = f"funds:list:{fund_type}:{limit}"
-    cached = get_cache(cache_key)
-    if cached:
-        return cached
+    
+    # 强制刷新时跳过缓存
+    if not refresh:
+        cached = get_cache(cache_key)
+        if cached:
+            # 添加缓存标记
+            cached["cacheHit"] = True
+            return cached
     
     try:
         # 筛选对应类型的基金
@@ -310,7 +397,13 @@ async def get_fund_list(fund_type: str = "hh", limit: int = 50):
                 })
                 continue
         
-        result = {"funds": funds, "count": len(funds), "type": fund_type}
+        result = {
+            "funds": funds,
+            "count": len(funds),
+            "type": fund_type,
+            "cacheHit": False,
+            "timestamp": datetime.now().isoformat()
+        }
         set_cache(cache_key, result, 300)  # 5 分钟缓存
         return result
         
@@ -319,7 +412,7 @@ async def get_fund_list(fund_type: str = "hh", limit: int = 50):
         import traceback
         traceback.print_exc()
         # 返回默认基金列表
-        return {"funds": [], "count": 0, "type": fund_type, "error": str(e)}
+        return {"funds": [], "count": 0, "type": fund_type, "error": str(e), "cacheHit": False}
 
 @app.get("/api/sectors/heatmap")
 async def get_sector_heatmap():
@@ -384,8 +477,47 @@ async def get_sector_heatmap():
         return []
 
 # 注册基金路由
-from services.finance.fund_routes import router as fund_router
-app.include_router(fund_router)
+# from services.finance.fund_routes import router as fund_router
+# app.include_router(fund_router)
+
+
+
+
+
+async def get_fund_detail(fund_code: str):
+    """获取基金详情（实时净值）"""
+    try:
+        import sys, os
+        # 添加项目根目录到 Python 路径（绝对路径，不依赖工作目录）
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        from services.tiantian_fund import get_fund_netvalue_sync
+        import asyncio
+        loop = asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, get_fund_netvalue_sync, fund_code)
+        if data:
+            return {
+                "code": data.get("code", fund_code),
+                "name": data.get("name", ""),
+                "unitNetValue": float(data.get("unitNetValue", 0) or 0),
+                "accNetValue": float(data.get("unitNetValue", 0) or 0),
+                "dailyGrowth": float(data.get("changePercent", 0) or 0),
+                "updateTime": data.get("updateTime", ""),
+            }
+        return None
+    except Exception as e:
+        print(f"获取基金 {fund_code} 详情失败：{e}")
+        return None
+
+
+@app.get("/api/funds/{code}")
+async def get_fund_detail_route(code: str):
+    """获取基金详情"""
+    fund = await get_fund_detail(code)
+    if fund:
+        return {"success": True, "data": fund}
+    raise HTTPException(status_code=404, detail="基金不存在")
 
 if __name__ == "__main__":
     import uvicorn

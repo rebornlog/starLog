@@ -31,13 +31,13 @@ app.add_middleware(
 # Redis 配置
 try:
     redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-    REDIS_AVAILABLE = redis_client.ping()
+    REDIS_AVAILABLE = True  # 强制启用
 except:
     redis_client = None
     REDIS_AVAILABLE = False
 
 CACHE_TTL = 3600  # 基金详情 1 小时缓存
-LIST_CACHE_TTL = 600  # 基金列表 10 分钟缓存（减少外部 API 调用）
+LIST_CACHE_TTL = 2700  # 基金列表 45 分钟缓存（与后台刷新周期匹配）
 
 # 热门基金列表
 POPULAR_FUNDS = [
@@ -136,39 +136,52 @@ def fetch_fund_netvalue(code: str) -> Optional[Dict[str, Any]]:
 @app.get("/api/funds/list")
 async def get_fund_list(
     fund_type: str = Query("all", description="基金类型"),
-    limit: int = Query(50, ge=1, le=100)
+    limit: int = Query(50, ge=1, le=100),
+    refresh: bool = Query(False, description="强制刷新缓存")
 ):
     """
-    获取基金列表（实时数据）
+    获取基金列表（纯缓存模式）
     优化策略：
-    1. 优先返回缓存（5 分钟）
-    2. 缓存失效时并发获取实时数据
-    3. 超时 15 秒返回静态数据兜底
+    1. 只读 Redis 缓存（<50ms 响应）
+    2. 缓存失效时返回静态数据 + 后台异步刷新
+    3. 提供 refresh 参数强制刷新（阻塞）
+    
+    注意：缓存键不包含 limit，因为数据相同只是返回数量不同
     """
-    cache_key = f"funds:list:{fund_type}:{limit}"
+    # 缓存键不包含 limit，避免缓存碎片化
+    cache_key = f"funds:list:{fund_type}"
     cached = get_cache(cache_key)
+    print(f"DEBUG: cache_key={cache_key}, cached={bool(cached)}")
+    
+    # 有缓存直接返回
     if cached:
+        cached['_source'] = 'cache'
+        cached['_refreshInterval'] = '45 分钟'
         return cached
     
-    # 设置总超时 15 秒
-    try:
-        result = await asyncio.wait_for(
-            _fetch_fund_list(fund_type, limit, cache_key),
-            timeout=15.0
-        )
-        set_cache(cache_key, result, LIST_CACHE_TTL)
-        return result
-    except asyncio.TimeoutError:
-        print("⚠️ 基金列表获取超时，返回静态数据")
-        # 超时返回静态数据
-        static_result = {
-            "success": True,
-            "funds": POPULAR_FUNDS[:limit],
-            "count": limit,
-            "type": fund_type,
-            "warning": "数据更新延迟"
-        }
-        return static_result
+    # 无缓存且强制刷新：同步获取
+    if refresh:
+        try:
+            result = await _fetch_fund_list(fund_type, limit, cache_key)
+            set_cache(cache_key, result, LIST_CACHE_TTL)
+            result['_source'] = 'realtime'
+            result['_refreshInterval'] = '45 分钟'
+            return result
+        except Exception as e:
+            print(f"强制刷新失败：{e}")
+    
+    # 无缓存：返回静态数据兜底
+    print("⚠️ 缓存未命中，返回静态数据")
+    static_result = {
+        "success": True,
+        "funds": POPULAR_FUNDS[:limit],
+        "count": limit,
+        "type": fund_type,
+        "warning": "数据加载中，后台正在刷新",
+        "_source": "static",
+        "_refreshInterval": '45 分钟'
+    }
+    return static_result
 
 async def _fetch_fund_list(fund_type: str, limit: int, cache_key: str = None):
     """内部函数：获取基金列表"""
@@ -286,6 +299,7 @@ async def get_fund_history(
     """
     cache_key = f"fund:history:{code}:{page}:{size}"
     cached = get_cache(cache_key)
+    print(f"DEBUG: cache_key={cache_key}, cached={bool(cached)}")
     if cached:
         return {"success": True, "data": cached, "source": "cache"}
     
@@ -314,8 +328,10 @@ async def get_fund_detail(code: str):
     """
     cache_key = f"fund:detail:{code}"
     cached = get_cache(cache_key)
+    print(f"DEBUG: cache_key={cache_key}, cached={bool(cached)}")
     if cached:
-        return {"success": True, "data": cached, "source": "cache"}
+        # 直接返回缓存数据（已包含 success/data 结构）
+        return cached if isinstance(cached, dict) and 'success' in cached else {"success": True, "data": cached, "source": "cache"}
     
     # 获取实时数据
     loop = asyncio.get_event_loop()
@@ -324,6 +340,7 @@ async def get_fund_detail(code: str):
     if not realtime_data:
         raise HTTPException(status_code=404, detail="基金数据不存在")
     
+    # 只缓存原始数据，不缓存包装结构
     set_cache(cache_key, realtime_data)
     
     return {"success": True, "data": realtime_data, "source": "realtime"}

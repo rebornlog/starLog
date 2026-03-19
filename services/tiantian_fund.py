@@ -124,13 +124,23 @@ class TianTianFundAPI:
 def get_fund_netvalue_sync(code: str) -> Optional[Dict[str, Any]]:
     """同步获取基金净值"""
     api = TianTianFundAPI()
-    return asyncio.run(api.get_fund_netvalue(code))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(api.get_fund_netvalue(code))
+    finally:
+        loop.close()
 
 
 def get_funds_batch_sync(codes: List[str]) -> List[Dict[str, Any]]:
     """同步批量获取基金净值"""
     api = TianTianFundAPI()
-    return asyncio.run(api.get_funds_batch(codes))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(api.get_funds_batch(codes))
+    finally:
+        loop.close()
 
 
 if __name__ == "__main__":

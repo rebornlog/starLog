@@ -70,7 +70,7 @@ export default function SipCalculatorPage() {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             定投参数
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* 每月定投金额 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -80,18 +80,19 @@ export default function SipCalculatorPage() {
                 type="number"
                 value={monthlyAmount}
                 onChange={(e) => setMonthlyAmount(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           focus:ring-2 focus:ring-green-500 focus:border-transparent
+                           text-base min-h-[48px]"
                 min="100"
                 step="100"
               />
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {[500, 1000, 2000, 5000].map(amount => (
                   <button
                     key={amount}
                     onClick={() => setMonthlyAmount(amount)}
-                    className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-200 dark:hover:bg-gray-600 min-h-[44px]"
                   >
                     ¥{amount}
                   </button>
@@ -108,18 +109,19 @@ export default function SipCalculatorPage() {
                 type="number"
                 value={years}
                 onChange={(e) => setYears(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           focus:ring-2 focus:ring-green-500 focus:border-transparent
+                           text-base min-h-[48px]"
                 min="1"
                 max="30"
               />
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {[1, 3, 5, 10].map(year => (
                   <button
                     key={year}
                     onClick={() => setYears(year)}
-                    className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-200 dark:hover:bg-gray-600 min-h-[44px]"
                   >
                     {year}年
                   </button>
@@ -136,19 +138,20 @@ export default function SipCalculatorPage() {
                 type="number"
                 value={annualRate}
                 onChange={(e) => setAnnualRate(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           focus:ring-2 focus:ring-green-500 focus:border-transparent
+                           text-base min-h-[48px]"
                 min="1"
                 max="30"
                 step="0.5"
               />
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {[5, 8, 10, 15].map(rate => (
                   <button
                     key={rate}
                     onClick={() => setAnnualRate(rate)}
-                    className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-200 dark:hover:bg-gray-600 min-h-[44px]"
                   >
                     {rate}%
                   </button>
@@ -171,30 +174,30 @@ export default function SipCalculatorPage() {
 
         {/* 结果汇总 */}
         {finalResult && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">💰 总投入本金</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">💰 总投入本金</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                 ¥{finalResult.invested.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">📊 总资产价值</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">📊 总资产价值</p>
+              <p className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 ¥{finalResult.value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">💵 累计收益</p>
-              <p className={`text-2xl font-bold ${
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">💵 累计收益</p>
+              <p className={`text-lg sm:text-2xl font-bold ${
                 finalResult.profit >= 0 ? 'text-red-500' : 'text-green-500'
               }`}>
                 {finalResult.profit >= 0 ? '+' : ''}¥{finalResult.profit.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">📈 收益率</p>
-              <p className={`text-2xl font-bold ${
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">📈 收益率</p>
+              <p className={`text-lg sm:text-2xl font-bold ${
                 finalResult.profitRate >= 0 ? 'text-red-500' : 'text-green-500'
               }`}>
                 {finalResult.profitRate >= 0 ? '+' : ''}{finalResult.profitRate.toFixed(2)}%

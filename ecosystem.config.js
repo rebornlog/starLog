@@ -5,6 +5,7 @@ module.exports = {
       cwd: '/home/admin/.openclaw/workspace/starLog',
       script: 'npm',
       args: 'run dev',
+      max_memory_restart: '500M',
       env: {
         NODE_ENV: 'development',
         PORT: '3000',
