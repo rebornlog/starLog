@@ -1,221 +1,218 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { castHexagram, interpretHexagram } from '@/lib/iching/divination';
-import { HEXAGRAMS } from '@/lib/iching/data';
-import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
-import { useToast } from '@/components/Toast';
-import HexagramVisual from '@/components/HexagramVisual';
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { castHexagram, interpretHexagram } from '@/lib/iching/divination'
+import { HEXAGRAMS } from '@/lib/iching/data'
+import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
+import { useToast } from '@/components/Toast'
+import HexagramVisual from '@/components/HexagramVisual'
+import Accordion from '@/components/Accordion'
+import DivinationGuide from '@/components/DivinationGuide'
+import NumberInput from '@/components/NumberInput'
 
-type Method = 'random' | 'time' | 'number';
+type Method = 'random' | 'time' | 'number'
+type PageState = 'guide' | 'select' | 'input' | 'confirm' | 'result'
 
 export default function IChingPage() {
-  const { showToast } = useToast();
-  const [showGuide, setShowGuide] = useState(true);
-  const [countdown, setCountdown] = useState(10);
-  const [method, setMethod] = useState<Method | null>(null);
-  const [numbers, setNumbers] = useState<[number, number, number] | null>(null);
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [favorited, setFavorited] = useState(false);
-
-  // 引导页倒计时
-  useEffect(() => {
-    if (showGuide && countdown > 0) {
-      const timer = setInterval(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (countdown === 0) {
-      setShowGuide(false);
-    }
-  }, [showGuide, countdown]);
+  const { showToast } = useToast()
+  const [pageState, setPageState] = useState<PageState>('guide')
+  const [method, setMethod] = useState<Method | null>(null)
+  const [numbers, setNumbers] = useState<[number, number, number] | null>(null)
+  const [result, setResult] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [favorited, setFavorited] = useState(false)
 
   // 检查收藏状态
   useEffect(() => {
     if (result?.hexagram) {
-      const id = `hexagram-${result.hexagram.id}`;
-      setFavorited(isFavorited('iching', id));
+      const id = `hexagram-${result.hexagram.id}`
+      setFavorited(isFavorited('iching', id))
     }
-  }, [result]);
+  }, [result])
 
   // 起卦
   const handleDivination = () => {
-    setLoading(true);
-    
+    setLoading(true)
+
     // 模拟思考时间，增加仪式感
     setTimeout(() => {
       try {
-        const divResult = castHexagram(method || 'random', numbers || undefined);
-        const interpretation = interpretHexagram(divResult);
-        setResult({ ...divResult, interpretation });
+        const divResult = castHexagram(method || 'random', numbers || undefined)
+        const interpretation = interpretHexagram(divResult)
+        setResult({ ...divResult, interpretation })
+        setPageState('result')
       } catch (error) {
-        console.error('起卦失败:', error);
+        console.error('起卦失败:', error)
+        showToast('起卦失败，请重试', 'error')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    }, 1500);
-  };
+    }, 1500)
+  }
 
   // 重置
   const handleReset = () => {
-    setMethod(null);
-    setNumbers(null);
-    setResult(null);
-  };
+    setPageState('select')
+    setMethod(null)
+    setNumbers(null)
+    setResult(null)
+  }
 
-  // 数字输入
+  // 完成引导
+  const handleGuideComplete = () => {
+    setPageState('select')
+  }
+
+  // 选择起卦方式
+  const handleMethodSelect = (selectedMethod: Method) => {
+    setMethod(selectedMethod)
+    if (selectedMethod === 'number') {
+      setPageState('input')
+    } else {
+      setPageState('confirm')
+    }
+  }
+
+  // 数字输入提交
   const handleNumberSubmit = (nums: [number, number, number]) => {
-    setNumbers(nums);
-    setMethod('number');
-  };
+    setNumbers(nums)
+    setMethod('number')
+    setPageState('confirm')
+  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-12 px-4">
-      {/* 装饰背景 */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-10">
-        <div className="absolute top-20 left-10 text-9xl">☯</div>
-        <div className="absolute bottom-20 right-10 text-9xl">☯</div>
-        <div className="absolute top-1/2 left-1/4 text-6xl">䷀</div>
-        <div className="absolute top-1/3 right-1/4 text-6xl">䷁</div>
-      </div>
+  // 返回选择
+  const handleBackToSelect = () => {
+    setPageState('select')
+    setMethod(null)
+    setNumbers(null)
+  }
 
-      <div className="max-w-4xl mx-auto relative z-10">
-        {/* 起卦引导页 */}
-        {showGuide ? (
-          <DivinationGuide 
-            countdown={countdown} 
-            onSkip={() => setShowGuide(false)} 
-          />
-        ) : (
+  // 渲染不同状态
+  const renderContent = () => {
+    switch (pageState) {
+      case 'guide':
+        return <DivinationGuide onComplete={handleGuideComplete} />
+
+      case 'select':
+        return (
           <>
-            {/* 标题 */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold text-amber-900 dark:text-amber-100 mb-4">
+            <div className="mb-12 text-center">
+              <h1 className="mb-4 text-4xl font-bold text-amber-900 md:text-5xl dark:text-amber-100">
                 ☯ 易经问卦 ☯
               </h1>
-              <p className="text-amber-700 dark:text-amber-300 text-lg">
-                心诚则灵 · 探索易经智慧
-              </p>
-              <p className="text-amber-600 dark:text-amber-400 text-sm mt-2">
+              <p className="text-lg text-amber-700 dark:text-amber-300">心诚则灵 · 探索易经智慧</p>
+              <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
                 三种起卦方式，为您揭示当下启示
               </p>
             </div>
 
-            {!result ? (
-              <>
-                {/* 起卦方式选择 */}
-                {!method && (
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <button
-                  onClick={() => setMethod('random')}
-                  className="group bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-amber-200 dark:border-amber-800"
-                >
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🎲</div>
-                  <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">
-                    随机起卦
-                  </h3>
-                  <p className="text-amber-700 dark:text-amber-300 text-sm">
-                    模拟铜钱摇卦，最传统的方式
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => setMethod('time')}
-                  className="group bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-amber-200 dark:border-amber-800"
-                >
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🕐</div>
-                  <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">
-                    时间起卦
-                  </h3>
-                  <p className="text-amber-700 dark:text-amber-300 text-sm">
-                    基于当前时辰，天人合一
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => setMethod('number')}
-                  className="group bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-amber-200 dark:border-amber-800"
-                >
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🔢</div>
-                  <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">
-                    数字起卦
-                  </h3>
-                  <p className="text-amber-700 dark:text-amber-300 text-sm">
-                    输入 3 个数字，心动即占
-                  </p>
-                </button>
-              </div>
-            )}
-
-            {/* 数字输入 */}
-            {method === 'number' && !numbers && (
-              <NumberInput onSubmit={handleNumberSubmit} onBack={() => setMethod(null)} />
-            )}
-
-            {/* 确认起卦 */}
-            {method && method !== 'number' && (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl text-center">
-                <p className="text-amber-700 dark:text-amber-300 mb-6">
-                  {method === 'random' ? '准备摇动铜钱...' : '正在感应时辰...'}
+            <div className="mb-8 grid gap-6 md:grid-cols-3">
+              <button
+                onClick={() => handleMethodSelect('random')}
+                className="group rounded-2xl border-2 border-amber-200 bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:border-amber-800 dark:bg-slate-800"
+              >
+                <div className="mb-4 text-5xl transition-transform group-hover:scale-110">🎲</div>
+                <h3 className="mb-2 text-xl font-bold text-amber-900 dark:text-amber-100">
+                  随机起卦
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  模拟铜钱摇卦，最传统的方式
                 </p>
-                <div className="flex gap-4 justify-center">
-                  <button
-                    onClick={handleDivination}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 rounded-full font-bold text-lg hover:shadow-lg disabled:opacity-50 transition-all"
-                  >
-                    {loading ? '起卦中...' : '开始起卦'}
-                  </button>
-                  <button
-                    onClick={handleReset}
-                    className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-slate-600 transition-all"
-                  >
-                    返回
-                  </button>
-                </div>
-              </div>
-            )}
+              </button>
+
+              <button
+                onClick={() => handleMethodSelect('time')}
+                className="group rounded-2xl border-2 border-amber-200 bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:border-amber-800 dark:bg-slate-800"
+              >
+                <div className="mb-4 text-5xl transition-transform group-hover:scale-110">🕐</div>
+                <h3 className="mb-2 text-xl font-bold text-amber-900 dark:text-amber-100">
+                  时间起卦
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">基于当前时辰，天人合一</p>
+              </button>
+
+              <button
+                onClick={() => handleMethodSelect('number')}
+                className="group rounded-2xl border-2 border-amber-200 bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:border-amber-800 dark:bg-slate-800"
+              >
+                <div className="mb-4 text-5xl transition-transform group-hover:scale-110">🔢</div>
+                <h3 className="mb-2 text-xl font-bold text-amber-900 dark:text-amber-100">
+                  数字起卦
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  输入 3 个数字，心动即占
+                </p>
+              </button>
+            </div>
           </>
-        ) : (
-          /* 卦象结果 */
+        )
+
+      case 'input':
+        return <NumberInput onSubmit={handleNumberSubmit} onBack={handleBackToSelect} />
+
+      case 'confirm':
+        return (
+          <div className="rounded-2xl bg-white p-8 text-center shadow-xl dark:bg-slate-800">
+            <p className="mb-6 text-amber-700 dark:text-amber-300">
+              {method === 'random' ? '准备摇动铜钱...' : '正在感应时辰...'}
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleDivination}
+                disabled={loading}
+                className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3 text-lg font-bold text-white transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                {loading ? '起卦中...' : '开始起卦'}
+              </button>
+              <button
+                onClick={handleBackToSelect}
+                className="rounded-full bg-gray-200 px-6 py-3 font-medium text-gray-700 transition-all hover:bg-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600"
+              >
+                返回
+              </button>
+            </div>
+          </div>
+        )
+
+      case 'result':
+        return result ? (
           <>
             <HexagramResult result={result} onReset={handleReset} />
-            
+
             {/* 收藏按钮 */}
             {result?.hexagram && (
-              <div className="flex justify-center mb-6">
+              <div className="mb-6 flex justify-center">
                 <button
                   type="button"
                   onClick={() => {
-                    const id = `hexagram-${result.hexagram.id}`;
-                    const isFav = isFavorited('iching', id);
+                    const id = `hexagram-${result.hexagram.id}`
+                    const isFav = isFavorited('iching', id)
                     if (isFav) {
-                      removeFavorite('iching', id);
-                      setFavorited(false);
-                      showToast('已取消收藏', 'info');
+                      removeFavorite('iching', id)
+                      setFavorited(false)
+                      showToast('已取消收藏', 'info')
                     } else {
                       addFavorite({
                         type: 'iching',
                         id,
                         title: `第${result.hexagram.number}卦 - ${result.hexagram.name}`,
                         data: { hexagram: result.hexagram, interpretation: result.interpretation },
-                      });
+                      })
                       addHistory({
                         type: 'iching',
                         id: `${id}-${Date.now()}`,
                         title: `第${result.hexagram.number}卦 - ${result.hexagram.name}`,
                         data: { hexagram: result.hexagram },
-                      });
-                      setFavorited(true);
-                      showToast('收藏成功！⭐', 'success');
+                      })
+                      setFavorited(true)
+                      showToast('收藏成功！⭐', 'success')
                     }
                   }}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-full px-6 py-3 font-medium transition-all ${
                     favorited
                       ? 'bg-pink-500 text-white hover:bg-pink-600'
-                      : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-2 border-pink-300 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-slate-700'
+                      : 'border-2 border-pink-300 bg-white text-gray-700 hover:bg-pink-50 dark:border-pink-700 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'
                   }`}
                 >
                   <span className="text-xl">{favorited ? '⭐' : '☆'}</span>
@@ -224,374 +221,151 @@ export default function IChingPage() {
               </div>
             )}
           </>
+        ) : null
+
+      default:
+        return null
+    }
+  }
+
+  // 引导页全屏显示
+  if (pageState === 'guide') {
+    return renderContent()
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-yellow-50 px-4 py-12 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* 装饰背景 */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden opacity-10">
+        <div className="absolute top-20 left-10 text-9xl">☯</div>
+        <div className="absolute right-10 bottom-20 text-9xl">☯</div>
+        <div className="absolute top-1/2 left-1/4 text-6xl">䷀</div>
+        <div className="absolute top-1/3 right-1/4 text-6xl">䷁</div>
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-4xl">
+        {renderContent()}
+
+        {/* 底部说明 */}
+        {pageState !== 'result' && (
+          <div className="mt-12 text-center">
+            <div className="mx-auto max-w-2xl rounded-xl bg-white/60 p-6 backdrop-blur-sm dark:bg-slate-800/60">
+              <h3 className="mb-2 font-bold text-amber-900 dark:text-amber-100">📖 关于易经问卦</h3>
+              <p className="text-sm leading-relaxed text-amber-700 dark:text-amber-300">
+                易经，群经之首，大道之源。六十四卦，三百八十四爻，
+                <br />
+                包罗万象，揭示天地人之道。
+                <br />
+                <span className="text-amber-600 dark:text-amber-400">
+                  问卦仅供参考，决策还需理性。
+                </span>
+              </p>
+            </div>
+          </div>
         )}
 
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 底部说明 */}
-      <div className="mt-12 text-center">
-        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 max-w-2xl mx-auto">
-          <h3 className="text-amber-900 dark:text-amber-100 font-bold mb-2">📖 关于易经问卦</h3>
-          <p className="text-amber-700 dark:text-amber-300 text-sm leading-relaxed">
-            易经，群经之首，大道之源。六十四卦，三百八十四爻，
-            <br />
-            包罗万象，揭示天地人之道。
-            <br />
-            <span className="text-amber-600 dark:text-amber-400">
-              问卦仅供参考，决策还需理性。
-            </span>
-          </p>
-        </div>
-      </div>
-
         {/* 导航 */}
-        <div className="mt-8 text-center">
-          <a
-            href="/zodiac"
-            className="inline-flex items-center text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
-          >
-            ← 返回星座运势
-          </a>
-        </div>
+        {pageState !== 'result' && (
+          <div className="mt-8 text-center">
+            <a
+              href="/zodiac"
+              className="inline-flex items-center text-amber-700 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+            >
+              ← 返回星座运势
+            </a>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-// 起卦引导页组件
-function DivinationGuide({ countdown, onSkip }: { countdown: number; onSkip: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <div className="max-w-2xl mx-auto text-center px-8">
-        {/* 太极动画 */}
-        <div className="mb-8 relative">
-          <div className="text-9xl animate-spin-slow mx-auto">☯</div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-32 h-32 bg-amber-400/20 rounded-full blur-2xl animate-pulse" />
-          </div>
-        </div>
-
-        {/* 引导文字 */}
-        <h2 className="text-3xl md:text-4xl font-bold text-amber-900 dark:text-amber-100 mb-6">
-          🙏 起卦前请静心
-        </h2>
-        
-        <div className="space-y-4 text-amber-700 dark:text-amber-300 text-lg mb-8">
-          <p>深呼吸，让心静下来</p>
-          <p>默念您的问题或所求之事</p>
-          <p className="text-amber-600 dark:text-amber-400 text-sm">
-            心诚则灵，天人感应
-          </p>
-        </div>
-
-        {/* 倒计时 */}
-        <div className="mb-8">
-          <div className="text-6xl font-bold text-amber-600 dark:text-amber-400 mb-4">
-            {countdown}
-          </div>
-          <div className="w-64 h-2 bg-amber-200 dark:bg-slate-700 rounded-full mx-auto overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-1000"
-              style={{ width: `${(countdown / 10) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 跳过按钮 */}
-        <button
-          onClick={onSkip}
-          className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 transition-colors text-sm"
-        >
-          跳过静心 →
-        </button>
-
-        {/* 装饰 */}
-        <div className="mt-12 flex justify-center gap-4 text-4xl opacity-50">
-          <span>🌿</span>
-          <span>🍃</span>
-          <span>🌱</span>
-        </div>
-      </div>
-
-      <style jsx global>{`
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// 数字输入组件（优化版）
-function NumberInput({ onSubmit, onBack }: { onSubmit: (nums: [number, number, number]) => void; onBack: () => void }) {
-  const { showToast } = useToast();
-  const [nums, setNums] = useState(['', '', '']);
-  const [error, setError] = useState<string | null>(null);
-
-  // 随机生成数字
-  const handleRandom = () => {
-    const randomNums = Array(3).fill(0).map(() => Math.floor(Math.random() * 999) + 1);
-    setNums(randomNums.map(String) as [string, string, string]);
-    showToast('🎲 已随机生成数字', 'success');
-  };
-
-  const handleSubmit = () => {
-    const parsed = nums.map(n => parseInt(n) || 0) as [number, number, number];
-    
-    // 校验
-    if (nums.some(n => !n || n.trim() === '')) {
-      setError('请输入完整的 3 个数字');
-      showToast('请输入完整的 3 个数字哦~', 'error');
-      return;
-    }
-    
-    if (parsed.some(n => n <= 0)) {
-      setError('数字必须是正整数');
-      showToast('数字必须是正整数哦~', 'error');
-      return;
-    }
-
-    setError(null);
-    onSubmit(parsed);
-  };
-
-  const handleChange = (index: number, value: string) => {
-    const newNums = [...nums];
-    newNums[index] = value;
-    setNums(newNums as [string, string, string]);
-    if (error) setError(null);
-  };
-
-  const isValid = nums.every(n => n && parseInt(n) > 0);
-
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl">
-      <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-6 text-center">
-        🔢 请输入 3 个数字
-      </h3>
-      
-      <div className="flex gap-4 justify-center mb-6">
-        {nums.map((num, i) => (
-          <div key={i} className="relative">
-            <input
-              type="number"
-              value={num}
-              onChange={(e) => handleChange(i, e.target.value)}
-              placeholder={`${i + 1}`}
-              className={`w-24 text-center text-2xl border-2 rounded-xl px-4 py-3 focus:outline-none transition-all dark:bg-slate-700 dark:text-white ${
-                error 
-                  ? 'border-red-400 focus:border-red-500' 
-                  : 'border-amber-300 dark:border-amber-700 focus:border-amber-500'
-              }`}
-            />
-            {num && !error && (
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs animate-scale-in">
-                ✓
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* 错误提示 */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm text-center">
-          {error}
-        </div>
-      )}
-      
-      {/* 操作按钮 */}
-      <div className="flex gap-4 justify-center mb-4">
-        <button
-          onClick={handleRandom}
-          className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-6 py-3 rounded-full font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all flex items-center gap-2"
-        >
-          <span>🎲</span>
-          <span>随机生成</span>
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={!isValid}
-          className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 rounded-full font-bold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        >
-          确认起卦
-        </button>
-        <button
-          onClick={onBack}
-          className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-slate-600 transition-all"
-        >
-          返回
-        </button>
-      </div>
-      
-      <p className="text-amber-600 dark:text-amber-400 text-sm text-center">
-        心中默念问题，心动即占 ✨
-      </p>
-
-      <style jsx global>{`
-        @keyframes scale-in {
-          from {
-            transform: scale(0);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out forwards;
-        }
-      `}</style>
-    </div>
-  );
-}
-
-
-// 可折叠面板组件
-function Accordion({ title, children, defaultOpen = false, icon = '' }: { 
-  title: string; 
-  children: React.ReactNode; 
-  defaultOpen?: boolean;
-  icon?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-8 py-6 flex items-center justify-between hover:bg-amber-50 dark:hover:bg-slate-700/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{icon}</span>
-          <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100">{title}</h3>
-        </div>
-        <div className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-          <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-      
-      {isOpen && (
-        <div className="px-8 pb-6 animate-fade-in">
-          {children}
-        </div>
-      )}
-
-      <style jsx global>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
-        }
-      `}</style>
-    </div>
-  );
+  )
 }
 
 // 卦象结果组件
 function HexagramResult({ result, onReset }: { result: any; onReset: () => void }) {
-  const { hexagram, character, method, timestamp, interpretation, structure } = result;
+  const { hexagram, character, method, timestamp, interpretation, structure } = result
 
   if (!hexagram) {
-    return <div>卦象未找到</div>;
+    return <div>卦象未找到</div>
   }
+
+  // 准备 Accordion 数据
+  const accordionItems = [
+    {
+      id: 'judgment',
+      title: '卦辞',
+      icon: '📜',
+      content: <p className="text-lg leading-relaxed">{hexagram.judgment}</p>,
+      defaultOpen: true,
+    },
+    {
+      id: 'image',
+      title: '象传',
+      icon: '🌄',
+      content: <p className="text-lg leading-relaxed">{hexagram.image}</p>,
+    },
+    {
+      id: 'interpretation',
+      title: '解读',
+      icon: '🔮',
+      content: (
+        <pre className="font-sans text-lg leading-relaxed whitespace-pre-wrap">
+          {interpretation}
+        </pre>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
-      {/* 卦象头部 - 添加可视化 */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl text-center">
+      {/* 卦象头部 */}
+      <div className="rounded-2xl bg-white p-8 text-center shadow-xl dark:bg-slate-800">
         {/* 卦象可视化 */}
-        <div className="mb-6 p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-700 dark:to-slate-600 rounded-xl">
+        <div className="mb-6 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:from-slate-700 dark:to-slate-600">
           <HexagramVisual structure={structure || hexagram.structure} size="lg" animated={true} />
         </div>
-        
+
         {/* 卦名字符 */}
-        <div className="text-8xl mb-4 animate-pulse">{character}</div>
-        <h2 className="text-3xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+        <div className="mb-4 animate-pulse text-8xl">{character}</div>
+        <h2 className="mb-2 text-3xl font-bold text-amber-900 dark:text-amber-100">
           第{hexagram.number}卦 · {hexagram.name}
         </h2>
-        <p className="text-amber-700 dark:text-amber-300 text-lg mb-4">
-          {hexagram.pinyin}
-        </p>
+        <p className="mb-4 text-lg text-amber-700 dark:text-amber-300">{hexagram.pinyin}</p>
         <div className="text-sm text-amber-600 dark:text-amber-400">
-          起卦方式：{method === 'random' ? '随机' : method === 'time' ? '时间' : '数字'} · {timestamp.toLocaleString('zh-CN')}
+          起卦方式：{method === 'random' ? '随机' : method === 'time' ? '时间' : '数字'} ·{' '}
+          {timestamp.toLocaleString('zh-CN')}
         </div>
       </div>
 
-      {/* 卦辞 - 默认展开 */}
-      <Accordion title="卦辞" defaultOpen={true} icon="📜">
-        <p className="text-amber-800 dark:text-amber-200 text-lg leading-relaxed">
-          {hexagram.judgment}
-        </p>
-      </Accordion>
-
-      {/* 象传 - 默认展开 */}
-      <Accordion title="象传" defaultOpen={true} icon="🌄">
-        <p className="text-amber-800 dark:text-amber-200 text-lg leading-relaxed">
-          {hexagram.image}
-        </p>
-      </Accordion>
-
-      {/* 解读 - 默认展开 */}
-      <Accordion title="解读" defaultOpen={true} icon="🔮">
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-700 dark:to-slate-800 rounded-xl p-6">
-          <pre className="text-amber-800 dark:text-amber-200 whitespace-pre-wrap leading-relaxed font-sans">
-            {interpretation}
-          </pre>
-        </div>
-      </Accordion>
+      {/* 使用 Accordion 展示卦辞、象传、解读 */}
+      <Accordion items={accordionItems} />
 
       {/* 操作按钮 */}
-      <div className="flex flex-wrap gap-4 justify-center">
+      <div className="flex flex-wrap justify-center gap-4">
         <button
           onClick={onReset}
-          className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 rounded-full font-bold hover:shadow-lg transition-all"
+          className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3 font-bold text-white transition-all hover:shadow-lg"
         >
           再占一卦
         </button>
         <a
           href="/zodiac"
-          className="bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 px-6 py-3 rounded-full font-medium border-2 border-purple-300 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-slate-700 transition-all"
+          className="rounded-full border-2 border-purple-300 bg-white px-6 py-3 font-medium text-purple-700 transition-all hover:bg-purple-50 dark:border-purple-700 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-slate-700"
         >
           星座运势
         </a>
         <a
           href="/diet"
-          className="bg-white dark:bg-slate-800 text-green-700 dark:text-green-300 px-6 py-3 rounded-full font-medium border-2 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-slate-700 transition-all"
+          className="rounded-full border-2 border-green-300 bg-white px-6 py-3 font-medium text-green-700 transition-all hover:bg-green-50 dark:border-green-700 dark:bg-slate-800 dark:text-green-300 dark:hover:bg-slate-700"
         >
           能量饮食
         </a>
         <Link
           href="/favorites"
-          className="bg-white dark:bg-slate-800 text-pink-700 dark:text-pink-300 px-6 py-3 rounded-full font-medium border-2 border-pink-300 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-slate-700 transition-all"
+          className="rounded-full border-2 border-pink-300 bg-white px-6 py-3 font-medium text-pink-700 transition-all hover:bg-pink-50 dark:border-pink-700 dark:bg-slate-800 dark:text-pink-300 dark:hover:bg-slate-700"
         >
           ⭐ 我的收藏
         </Link>
       </div>
     </div>
-  );
+  )
 }
