@@ -478,8 +478,11 @@ async def get_sector_heatmap():
         return []
 
 # 注册基金路由
-# from services.finance.fund_routes import router as fund_router
-# app.include_router(fund_router)
+# 注册基金路由（完整 API）
+import sys
+sys.path.insert(0, '/home/admin/.openclaw/workspace/starLog/services/finance')
+from fund_routes import router as fund_router
+app.include_router(fund_router)
 
 
 

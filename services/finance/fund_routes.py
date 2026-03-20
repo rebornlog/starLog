@@ -5,8 +5,10 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
 import asyncio
-from services.tiantian_fund import TianTianFundAPI, get_fund_netvalue_sync, get_funds_batch_sync
-from services.data.funds import funds as static_funds
+import sys
+sys.path.insert(0, '/home/admin/.openclaw/workspace/starLog/services')
+from tiantian_fund import TianTianFundAPI, get_fund_netvalue_sync, get_funds_batch_sync
+from data.funds import funds as static_funds
 
 router = APIRouter(prefix="/api/funds", tags=["funds"])
 
