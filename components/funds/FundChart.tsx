@@ -53,10 +53,14 @@ export default function FundChart({ data, height = 300, showVolume = false }: Fu
     const chartData = data
       .slice()
       .reverse()
-      .map(item => ({
-        time: item.date.replace(/-/g, '/') as Time,
-        value: item.netValue,
-      }))
+      .map(item => {
+        // 转换日期为时间戳（毫秒）
+        const timestamp = new Date(item.date).getTime() / 1000
+        return {
+          time: timestamp as Time,
+          value: item.netValue,
+        }
+      })
 
     // 创建线系列
     const lineSeries = chart.addLineSeries({

@@ -398,6 +398,7 @@ async def get_fund_list(fund_type: str = "hh", limit: int = 50, refresh: bool = 
                 continue
         
         result = {
+            "success": True,
             "funds": funds,
             "count": len(funds),
             "type": fund_type,
