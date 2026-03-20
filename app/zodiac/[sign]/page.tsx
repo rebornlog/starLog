@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { use } from 'react';
-import { ZODIAC_SIGNS, getZodiacSign } from '@/lib/zodiac/data';
+import { ZODIAC_SIGNS, getZodiacSign, type ZodiacSign } from '@/lib/zodiac/data';
 import { generateDailyFortune, type DailyFortune } from '@/lib/zodiac/fortune';
 import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage';
 import { useToast } from '@/components/Toast';
 import { Skeleton } from '@/components/Skeleton';
+import { DateSelector, LuckyElements, FortuneTrend } from '@/components/zodiac';
 
 // 动态导入重型组件
 const RadarChart = dynamic(() => import('@/components/RadarChart'), {
@@ -22,31 +23,32 @@ interface PageProps {
   }>;
 }
 
-// 运势等级
+// 运势等级（适配 1-5 星制）
 function getFortuneLevel(score: number): { label: string; emoji: string; color: string } {
-  if (score >= 90) return { label: '大吉', emoji: '🌟', color: 'text-yellow-400' };
-  if (score >= 80) return { label: '吉', emoji: '✨', color: 'text-green-400' };
-  if (score >= 70) return { label: '小吉', emoji: '🌙', color: 'text-blue-400' };
-  if (score >= 60) return { label: '平', emoji: '☁️', color: 'text-gray-400' };
+  if (score >= 5) return { label: '大吉', emoji: '🌟', color: 'text-yellow-400' };
+  if (score >= 4) return { label: '吉', emoji: '✨', color: 'text-green-400' };
+  if (score >= 3) return { label: '小吉', emoji: '🌙', color: 'text-blue-400' };
+  if (score >= 2) return { label: '平', emoji: '☁️', color: 'text-gray-400' };
   return { label: '注意', emoji: '⚠️', color: 'text-orange-400' };
 }
 
-// 运势条组件
+// 运势条组件（适配 1-5 星制）
 function FortuneBar({ label, score, color }: { label: string; score: number; color: string }) {
   const level = getFortuneLevel(score);
+  const percentage = (score / 5) * 100;
   
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
         <span className="text-white font-medium">{label}</span>
         <span className={`${level.color} font-bold`}>
-          {level.emoji} {score}分 {level.label}
+          {level.emoji} {score}星 {level.label}
         </span>
       </div>
       <div className="h-3 bg-white/20 rounded-full overflow-hidden">
         <div
           className={`h-full ${color} transition-all duration-1000 ease-out`}
-          style={{ width: `${score}%` }}
+          style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
@@ -62,19 +64,30 @@ export default function ZodiacSignPage({ params }: PageProps) {
   const [fortune, setFortune] = useState<DailyFortune | null>(null);
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  useEffect(() => {
+  // 根据日期生成运势
+  const generateFortuneForDate = useCallback((date: Date) => {
     if (!sign) return;
-
-    // 生成今日运势
-    const fortuneData = generateDailyFortune(sign.id, new Date());
+    const fortuneData = generateDailyFortune(sign.id, date);
     setFortune(fortuneData);
     
     // 检查收藏状态
-    const id = `zodiac-${sign.id}-${new Date().toDateString()}`;
+    const id = `zodiac-${sign.id}-${date.toDateString()}`;
     setFavorited(isFavorited('zodiac', id));
     setLoading(false);
   }, [sign]);
+
+  useEffect(() => {
+    generateFortuneForDate(new Date());
+  }, [sign, generateFortuneForDate]);
+
+  // 处理日期变化
+  const handleDateChange = useCallback((date: Date) => {
+    setLoading(true);
+    setSelectedDate(date);
+    generateFortuneForDate(date);
+  }, [generateFortuneForDate]);
 
   if (!sign || loading || !fortune) {
     return (
@@ -84,15 +97,14 @@ export default function ZodiacSignPage({ params }: PageProps) {
     );
   }
 
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('zh-CN', {
+  const dateStr = selectedDate.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'long',
   });
 
-  const fortuneId = `zodiac-${sign.id}-${today.toDateString()}`;
+  const fortuneId = `zodiac-${sign.id}-${selectedDate.toDateString()}`;
 
   const handleToggleFavorite = () => {
     if (favorited) {
@@ -144,6 +156,14 @@ export default function ZodiacSignPage({ params }: PageProps) {
           >
             ← 返回星座列表
           </Link>
+        </div>
+
+        {/* 日期选择器 */}
+        <div className="mb-8">
+          <DateSelector
+            selectedDate={selectedDate}
+            onDateChange={handleDateChange}
+          />
         </div>
 
         {/* 星座头部 */}
@@ -226,31 +246,10 @@ export default function ZodiacSignPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* 今日宜忌 + 幸运元素 */}
+        {/* 幸运元素 + 今日宜忌 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* 幸运元素 */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-2xl">🍀</span>
-              幸运元素
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span className="text-white/70">幸运颜色</span>
-                <span className="text-white font-bold text-lg">{fortune.luckyColor}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span className="text-white/70">幸运数字</span>
-                <span className="text-white font-bold text-lg">{fortune.luckyNumber}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span className="text-white/70">幸运星座</span>
-                <span className="text-white font-bold text-lg">
-                  {ZODIAC_SIGNS[Math.abs(fortune.luckyNumber) % 12].name}
-                </span>
-              </div>
-            </div>
-          </div>
+          {/* 幸运元素可视化 */}
+          <LuckyElements fortune={fortune} />
 
           {/* 今日宜忌 */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
@@ -293,6 +292,11 @@ export default function ZodiacSignPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 运势趋势图 */}
+        <div className="mb-8">
+          <FortuneTrend sign={sign} currentDate={selectedDate} />
         </div>
 
         {/* 分项运势详解 */}
