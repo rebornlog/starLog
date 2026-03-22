@@ -1,0 +1,105 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- 代码背景装饰 -->
+  <text x="50" y="100" fill="#2d3748" font-family="monospace" font-size="14" opacity="0.3">
+    SELECT * FROM orders WHERE...
+  </text>
+  <text x="50" y="130" fill="#2d3748" font-family="monospace" font-size="14" opacity="0.3">
+    EXPLAIN ANALYZE...
+  </text>
+  <text x="50" y="160" fill="#2d3748" font-family="monospace" font-size="14" opacity="0.3">
+    ALTER TABLE ADD INDEX...
+  </text>
+  
+  <!-- 主标题 -->
+  <text x="600" y="200" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="48" font-weight="bold" filter="url(#glow)">
+    当我把 SQL 优化了
+  </text>
+  
+  <!-- 100 倍 高亮 -->
+  <text x="600" y="280" text-anchor="middle" fill="#fbbf24" font-family="Arial, sans-serif" font-size="120" font-weight="bold" filter="url(#glow)">
+    100 倍
+  </text>
+  
+  <!-- 副标题 -->
+  <text x="600" y="340" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="32">
+    CTO 给我鞠了一躬
+  </text>
+  
+  <!-- 对比框 -->
+  <!-- 优化前 -->
+  <rect x="150" y="380" width="200" height="120" rx="10" fill="#dc2626" opacity="0.9"/>
+  <text x="250" y="430" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="bold">
+    优化前
+  </text>
+  <text x="250" y="475" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="36" font-weight="bold">
+    30 秒
+  </text>
+  
+  <!-- 箭头 -->
+  <path d="M 380 440 L 480 440" stroke="#10b981" stroke-width="4" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+    </marker>
+  </defs>
+  <text x="430" y="420" text-anchor="middle" fill="#10b981" font-family="Arial, sans-serif" font-size="20" font-weight="bold">
+    100x
+  </text>
+  
+  <!-- 优化后 -->
+  <rect x="510" y="380" width="200" height="120" rx="10" fill="#10b981" opacity="0.9"/>
+  <text x="610" y="430" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="bold">
+    优化后
+  </text>
+  <text x="610" y="475" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="36" font-weight="bold">
+    300ms
+  </text>
+  
+  <!-- 技术标签 -->
+  <g transform="translate(150, 540)">
+    <rect width="110" height="35" rx="5" fill="#3b82f6" opacity="0.8"/>
+    <text x="55" y="23" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">#SQL</text>
+  </g>
+  
+  <g transform="translate(280, 540)">
+    <rect width="110" height="35" rx="5" fill="#8b5cf6" opacity="0.8"/>
+    <text x="55" y="23" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">#性能优化</text>
+  </g>
+  
+  <g transform="translate(410, 540)">
+    <rect width="110" height="35" rx="5" fill="#ec4899" opacity="0.8"/>
+    <text x="55" y="23" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">#数据库</text>
+  </g>
+  
+  <g transform="translate(540, 540)">
+    <rect width="110" height="35" rx="5" fill="#f59e0b" opacity="0.8"/>
+    <text x="55" y="23" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">#职场成长</text>
+  </g>
+  
+  <!-- 作者 -->
+  <text x="1050" y="590" text-anchor="end" fill="#6b7280" font-family="Arial, sans-serif" font-size="16">
+    作者：林蒹葭
+  </text>
+  
+  <!-- 装饰线条 -->
+  <line x1="100" y1="50" x2="1100" y2="50" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+  <line x1="100" y1="580" x2="1100" y2="580" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+</svg>
