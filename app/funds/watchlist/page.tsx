@@ -5,7 +5,8 @@ import { useWatchlist } from '@/hooks/useWatchlist'
 import { Fund } from '@/types/fund'
 import { useState, useEffect } from 'react'
 
-const API_BASE = 'http://localhost:8081'
+// 使用 Next.js 代理（自动转发到 8081 端口）
+const API_BASE = ''
 
 export default function WatchlistPage() {
   const { watchlist, isLoaded, removeFromWatchlist, clearWatchlist } = useWatchlist()

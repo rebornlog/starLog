@@ -35,9 +35,9 @@ export default function FundComparePage() {
     }
   }, [searchParams])
 
-  // 加载热门基金列表
+  // 加载热门基金列表（使用 Next.js 代理）
   useEffect(() => {
-    fetch('http://47.79.20.10:8081/api/funds/list?fund_type=all&limit=20')
+    fetch('/api/funds/list?fund_type=all&limit=20')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.funds) {
@@ -69,9 +69,9 @@ export default function FundComparePage() {
 
     setLoading(true)
     try {
-      // 获取历史数据
+      // 获取历史数据（使用 Next.js 代理）
       const promises = fundsToCompare.map(async (code) => {
-        const res = await fetch(`http://47.79.20.10:8081/api/funds/${code}/history?page=1&size=30`)
+        const res = await fetch(`/api/funds/${code}/history?page=1&size=30`)
         const data = await res.json()
         return { code, history: data.data || [] }
       })
@@ -83,9 +83,9 @@ export default function FundComparePage() {
       })
       setHistoryData(historyMap)
 
-      // 获取基金基本信息（从 API）
+      // 获取基金基本信息（从 API，使用 Next.js 代理）
       const fundsPromises = fundsToCompare.map(async (code) => {
-        const res = await fetch(`http://47.79.20.10:8081/api/funds/${code}`)
+        const res = await fetch(`/api/funds/${code}`)
         const data = await res.json()
         return data.success ? data : null
       })

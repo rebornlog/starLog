@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any
 import requests
 import redis
 import json
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import random
 import threading
 from collections import OrderedDict
@@ -22,10 +22,18 @@ app = FastAPI(
     version="2.0.1"
 )
 
-# CORS 配置
+# CORS 配置 - 支持本地开发和生产环境
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8081", "http://47.79.20.10:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://47.79.20.10:3000",
+        "http://47.79.20.10",
+        "https://starlog.dev",
+        "https://www.starlog.dev",
+    ],
+    allow_origin_regex=r"https?://(?:[\w-]+\.)?starlog\.dev",  # 支持所有子域名
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -154,6 +162,40 @@ def set_cache(key: str, data: Any, ttl: int = CACHE_TTL) -> None:
 async def health_check():
     return {"status": "healthy", "version": "2.0.1", "timestamp": datetime.now().isoformat(), "redis": "connected" if REDIS_AVAILABLE else "disconnected"}
 
+@app.get("/api/stocks/list")
+async def get_stock_list(search: str = Query(default="", description="搜索关键词"), sector: str = Query(default="", description="板块")):
+    """获取股票列表"""
+    cache_key = f"stocks:list:{search}:{sector}"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+    
+    result = []
+    
+    # 遍历热门股票
+    for stock in POPULAR_STOCKS:
+        # 搜索过滤
+        if search:
+            if search.lower() not in stock["code"].lower() and search.lower() not in stock["name"].lower():
+                continue
+        
+        # 板块过滤
+        if sector and stock.get("sector") != sector:
+            continue
+        
+        result.append({
+            "code": stock["code"],
+            "name": stock["name"],
+            "sector": stock.get("sector", ""),
+            "industry": stock.get("industry", "")
+        })
+    
+    return {
+        "success": True,
+        "stocks": result,
+        "count": len(result)
+    }
+
 @app.get("/api/stocks/popular")
 async def get_popular_stocks():
     """获取热门股票列表（含实时价格）"""
@@ -186,6 +228,112 @@ async def get_popular_stocks():
     
     set_cache(cache_key, result, ttl=60)  # 1 分钟缓存
     return result
+
+@app.get("/api/stocks/{stock_code}/kline")
+async def get_stock_kline(stock_code: str, period: str = Query(default="day", description="周期：day/week/month")):
+    """获取股票 K 线数据（新浪财经接口）"""
+    cache_key = f"stock:kline:{stock_code}:{period}"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+    
+    try:
+        # 映射周期参数到新浪财经接口
+        period_map = {
+            "day": "day",
+            "week": "week",
+            "month": "month"
+        }
+        sy = period_map.get(period, "day")
+        
+        # 新浪财经 K 线接口
+        prefix = "sh" if stock_code.startswith("6") else "sz"
+        url = f"http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol={prefix}{stock_code}&scale={sy}&ma=no&datalen=100"
+        
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        
+        if not data or not isinstance(data, list):
+            # 如果新浪接口失败，返回模拟数据
+            return {
+                "success": True,
+                "code": stock_code,
+                "period": period,
+                "klines": generate_mock_kline(stock_code, period),
+                "source": "mock"
+            }
+        
+        # 转换数据格式
+        klines = []
+        for item in data:
+            # 新浪数据格式：{"day":"2024-01-15","open":15.23,"high":15.89,"low":15.10,"close":15.67,"volume":123456}
+            klines.append({
+                "time": int(datetime.strptime(item["day"], "%Y-%m-%d").timestamp()),
+                "open": float(item["open"]),
+                "high": float(item["high"]),
+                "low": float(item["low"]),
+                "close": float(item["close"]),
+                "volume": int(item["volume"])
+            })
+        
+        result = {
+            "success": True,
+            "code": stock_code,
+            "period": period,
+            "klines": klines,
+            "source": "sina",
+            "count": len(klines)
+        }
+        
+        set_cache(cache_key, result, ttl=300)  # 5 分钟缓存
+        return result
+        
+    except Exception as e:
+        # 出错时返回模拟数据
+        return {
+            "success": True,
+            "code": stock_code,
+            "period": period,
+            "klines": generate_mock_kline(stock_code, period),
+            "source": "mock",
+            "error": str(e)
+        }
+
+def generate_mock_kline(stock_code: str, period: str):
+    """生成模拟 K 线数据（备用）"""
+    import random
+    klines = []
+    now = datetime.now()
+    base_price = 10 + random.random() * 100
+    
+    days = 100
+    for i in range(days):
+        if period == "day":
+            time = now - timedelta(days=days-i)
+        elif period == "week":
+            time = now - timedelta(weeks=days-i)
+        else:
+            time = now - timedelta(days=30*(days-i))
+        
+        change = (random.random() - 0.5) * 5
+        open_price = base_price
+        close_price = base_price + change
+        high_price = max(open_price, close_price) + random.random() * 2
+        low_price = min(open_price, close_price) - random.random() * 2
+        volume = int(random.random() * 1000000)
+        
+        klines.append({
+            "time": int(time.timestamp()),
+            "open": round(open_price, 2),
+            "high": round(high_price, 2),
+            "low": round(low_price, 2),
+            "close": round(close_price, 2),
+            "volume": volume
+        })
+        
+        base_price = close_price
+    
+    return klines
 
 @app.get("/api/stocks/{stock_code}")
 async def get_stock_quote(stock_code: str):
@@ -266,6 +414,63 @@ async def get_stock_quote(stock_code: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取股票数据失败：{str(e)}")
+
+@app.get("/api/market/index")
+async def get_market_index():
+    """获取大盘指数（上证/深证/创业板/沪深 300）"""
+    cache_key = "market:index"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+    
+    indices = {
+        "上证指数": {"code": "sh000001", "name": "上证指数"},
+        "深证成指": {"code": "sz399001", "name": "深证成指"},
+        "创业板指": {"code": "sz399006", "name": "创业板指"},
+        "沪深 300": {"code": "sh000300", "name": "沪深 300"}
+    }
+    
+    result = []
+    for name, info in indices.items():
+        try:
+            url = f"http://qt.gtimg.cn/q={info['code']}"
+            resp = requests.get(url, timeout=5)
+            data = resp.content.decode('gbk')
+            
+            if "=" in data:
+                parts = data.split('"')[1].split('~')
+                if len(parts) >= 5:
+                    current = float(parts[3])
+                    prev_close = float(parts[4])
+                    change = current - prev_close
+                    change_pct = (change / prev_close * 100) if prev_close else 0
+                    
+                    result.append({
+                        "name": info["name"],
+                        "code": info["code"],
+                        "price": current,
+                        "change": round(change, 2),
+                        "changePercent": round(change_pct, 2)
+                    })
+        except Exception as e:
+            # 出错时返回基本数据
+            result.append({
+                "name": info["name"],
+                "code": info["code"],
+                "price": 0,
+                "change": 0,
+                "changePercent": 0,
+                "error": str(e)
+            })
+    
+    response_data = {
+        "success": True,
+        "indices": result,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    set_cache(cache_key, response_data, ttl=60)  # 1 分钟缓存
+    return response_data
 
 @app.get("/api/market/overview")
 async def get_market_overview():

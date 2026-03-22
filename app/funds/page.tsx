@@ -9,8 +9,8 @@ import FundListSkeleton from '@/components/FundListSkeleton'
 const FUND_TYPES: (FundType | '全部')[] = ['全部', '股票型', '混合型', '债券型', '货币型', 'QDII', '指数型']
 const RISK_LEVELS: (RiskLevel | '全部')[] = ['全部', '低', '中低', '中', '中高', '高']
 
-// API 基础 URL - 使用本地 8081 端口（实时数据）
-const API_BASE = 'http://localhost:8081'
+// API 基础 URL - 使用 Next.js 代理（自动转发到 8081 端口）
+const API_BASE = ''
 
 export default function FundsPage() {
   const [funds, setFunds] = useState<Fund[]>([])

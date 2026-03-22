@@ -21,10 +21,10 @@ export default function FundDetailPage() {
   const [loadingHistory, setLoadingHistory] = useState(false)
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist()
 
-  // 从 API 获取基金数据
+  // 从 API 获取基金数据（使用 Next.js 代理）
   useEffect(() => {
     setLoading(true)
-    fetch(`http://47.79.20.10:8081/api/funds/${code}`)
+    fetch(`/api/funds/${code}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -39,7 +39,7 @@ export default function FundDetailPage() {
   useEffect(() => {
     if (activeTab === 'performance' && historyData.length === 0 && !loadingHistory && fund) {
       setLoadingHistory(true)
-      fetch(`http://47.79.20.10:8081/api/funds/${code}/history?page=1&size=60`)
+      fetch(`/api/funds/${code}/history?page=1&size=60`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.data) {

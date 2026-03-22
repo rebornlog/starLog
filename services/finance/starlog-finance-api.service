@@ -1,0 +1,17 @@
+[Unit]
+Description=starLog Finance API
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/.openclaw/workspace/starLog/services/finance
+Environment="PATH=/home/admin/.openclaw/workspace/starLog/services/finance/venv/bin"
+ExecStart=/home/admin/.openclaw/workspace/starLog/services/finance/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8081
+Restart=always
+RestartSec=5
+StandardOutput=append:/tmp/finance-api.log
+StandardError=append:/tmp/finance-api-error.log
+
+[Install]
+WantedBy=multi-user.target
