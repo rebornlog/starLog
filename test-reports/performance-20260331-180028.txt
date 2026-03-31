@@ -1,0 +1,4 @@
+http://localhost:3000|HTTP 200|34ms|33KB
+http://localhost:3000/funds|HTTP 308|51ms|0KB
+http://localhost:3000/stocks|HTTP 308|32ms|0KB
+http://localhost:3000/blog|HTTP 308|25ms|0KB

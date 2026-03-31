@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-03-31T17:28:21+08:00",
+  "issues": [
+    {
+      "type": "page_error",
+      "severity": "high",
+      "location": "/",
+      "details": "HTTP 000",
+      "fix": "check_server_status"
+    }
+,
+    {
+      "type": "page_error",
+      "severity": "high",
+      "location": "/funds",
+      "details": "HTTP 000",
+      "fix": "check_server_status"
+    }
+,
+    {
+      "type": "page_error",
+      "severity": "high",
+      "location": "/stocks",
+      "details": "HTTP 000",
+      "fix": "check_server_status"
+    }
+,
+    {
+      "type": "page_error",
+      "severity": "high",
+      "location": "/blog",
+      "details": "HTTP 000",
+      "fix": "check_server_status"
+    }
+,
+    {
+      "type": "page_error",
+      "severity": "high",
+      "location": "/funds/000001",
+      "details": "HTTP 000",
+      "fix": "check_server_status"
+    }
+,
+    {
+      "type": "page_error",
+      "severity": "high",
+      "location": "/stocks/600519",
+      "details": "HTTP 000",
+      "fix": "check_server_status"
+    }
+,
+    {
+      "type": "api_error",
+      "severity": "high",
+      "location": "/health",
+      "details": "No response",
+      "fix": "restart_api_service"
+    }
+,
+    {
+      "type": "api_error",
+      "severity": "high",
+      "location": "/api/funds/list",
+      "details": "No response",
+      "fix": "restart_api_service"
+    }
+,
+    {
+      "type": "api_error",
+      "severity": "high",
+      "location": "/api/stocks/list",
+      "details": "No response",
+      "fix": "restart_api_service"
+    }
+,
+    {
+      "type": "javascript_error",
+      "severity": "high",
+      "location": "frontend",
+      "details": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/",
+      "fix": "fix_javascript_code"
+    }
+,
+    {
+      "type": "seo_missing_title",
+      "severity": "medium",
+      "location": "/funds",
+      "details": "Missing <title> tag",
+      "fix": "add_metadata"
+    }
+,
+    {
+      "type": "seo_missing_description",
+      "severity": "low",
+      "location": "/funds",
+      "details": "Missing meta description",
+      "fix": "add_metadata"
+    }
+,
+    {
+      "type": "seo_missing_title",
+      "severity": "medium",
+      "location": "/stocks",
+      "details": "Missing <title> tag",
+      "fix": "add_metadata"
+    }
+,
+    {
+      "type": "seo_missing_description",
+      "severity": "low",
+      "location": "/stocks",
+      "details": "Missing meta description",
+      "fix": "add_metadata"
+    }
+,
+    {
+      "type": "seo_missing_title",
+      "severity": "medium",
+      "location": "/blog",
+      "details": "Missing <title> tag",
+      "fix": "add_metadata"
+    }
+,
+    {
+      "type": "seo_missing_description",
+      "severity": "low",
+      "location": "/blog",
+      "details": "Missing meta description",
+      "fix": "add_metadata"
+    }
+  ]
+}
