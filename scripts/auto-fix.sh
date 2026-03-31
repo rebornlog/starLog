@@ -26,73 +26,13 @@ log_success() { log "${GREEN}✅$NC $1"; }
 log_warning() { log "${YELLOW}⚠️$NC $1"; }
 log_error() { log "${RED}❌$NC $1"; }
 
-# 修复缺失的 SEO meta 标签
+# ⚠️ 已禁用：修复缺失的 SEO meta 标签
+# 原因：2026-03-31 14:28 误改代码导致页面崩溃
+# 改为：人工检查和添加 metadata
 fix_seo_meta() {
-    log_step "检查并修复 SEO Meta 标签..."
-    
-    local pages_dir="$WORKSPACE_DIR/app"
-    local fixed_count=0
-    
-    # 检查各个页面的 metadata 配置
-    for page_dir in "$pages_dir"/*/ "$pages_dir"/funds/*/; do
-        if [ -d "$page_dir" ]; then
-            local page_name=$(basename "$page_dir")
-            local page_file="$page_dir/page.tsx"
-            
-            if [ -f "$page_file" ]; then
-                log "  检查：$page_name"
-                
-                # 检查是否有 metadata 导出
-                if ! grep -q "export const metadata" "$page_file" && ! grep -q "export async function generateMetadata" "$page_file"; then
-                    log_warning "    缺少 metadata，尝试添加..."
-                    
-                    # 生成 title
-                    local title=$(echo "$page_name" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
-                    if [ "$page_name" = "funds" ]; then
-                        title="基金 - 实时净值查询"
-                    elif [ "$page_name" = "stocks" ]; then
-                        title="股票 - 实时行情"
-                    elif [ "$page_name" = "blog" ]; then
-                        title="博客 - 技术文章"
-                    fi
-                    
-                    # 添加 metadata 导出
-                    local metadata_block="
-export const metadata = {
-  title: '$title | starLog',
-  description: '$title 页面 - starLog 个人知识库',
-  robots: {
-    index: true,
-    follow: true,
-  },
-}
-"
-                    # 在文件开头插入 metadata（在第一个 import 之后）
-                    if grep -q "^import" "$page_file"; then
-                        # 有 import，在最后一个 import 后插入
-                        local temp_file=$(mktemp)
-                        awk -v meta="$metadata_block" '
-                        /^import/ { import_block = import_block $0 "\n"; next }
-                        { if (import_block) { print import_block; print meta; import_block = "" } print }
-                        END { if (import_block) { print import_block; print meta } }
-                        ' "$page_file" > "$temp_file"
-                        mv "$temp_file" "$page_file"
-                    else
-                        # 没有 import，直接在开头插入
-                        echo "$metadata_block" | cat - "$page_file" > temp && mv temp "$page_file"
-                    fi
-                    
-                    log_success "    已添加 metadata: $title"
-                    ((fixed_count++))
-                else
-                    log_success "    metadata 已存在"
-                fi
-            fi
-        fi
-    done
-    
-    log "✅ 共修复 $fixed_count 个页面的 metadata"
-    return $fixed_count
+    log_step "检查 SEO Meta 标签（仅检测，不修复）..."
+    log "ℹ️  自动修复已禁用，需要人工检查和添加 metadata"
+    return 0
 }
 
 # 优化图片为 WebP
