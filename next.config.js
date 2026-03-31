@@ -21,7 +21,7 @@ async function rewrites() {
     },
     {
       source: '/api/funds/:path*',
-      destination: 'http://localhost:8081/api/funds/:path*',
+      destination: 'http://localhost:8082/api/funds/:path*',  // 基金 API 在 8082 端口
     },
     {
       source: '/api/market/:path*',

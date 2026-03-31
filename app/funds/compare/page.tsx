@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
+
+export const metadata = {
+  title: 'Compare | starLog',
+  description: 'Compare 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 interface Fund {
   code: string
   name: string

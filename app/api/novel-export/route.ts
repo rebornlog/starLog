@@ -4,14 +4,14 @@ import path from 'path'
 
 export async function GET() {
   try {
-    // 压缩包文件路径
-    const zipPath = path.join(process.cwd(), '../../yima_tulong_book.zip')
+    // 压缩包文件路径 - 使用绝对路径
+    const zipPath = path.join(process.cwd(), 'yima_tulong_book.zip')
     
     // 读取文件
     const file = await fs.readFile(zipPath)
     
-    // 返回文件流
-    return new NextResponse(file, {
+    // 返回文件流 - 使用正确的 Response
+    return new Response(file, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': 'attachment; filename="yima_tulong_book.zip"',

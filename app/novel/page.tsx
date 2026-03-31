@@ -3,6 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+
+export const metadata = {
+  title: 'Novel | starLog',
+  description: 'Novel 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 export default function NovelPage() {
   const [downloading, setDownloading] = useState(false)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
@@ -13,31 +24,16 @@ export default function NovelPage() {
       setDownloading(true)
       setDownloadError(null)
       
-      const response = await fetch('/api/novel-export')
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || '下载失败')
-      }
-      
-      // 创建 blob 并下载
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'yima_tulong_book.zip'
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      // 直接使用 window.open 跟随重定向
+      window.open('/api/novel-export', '_blank')
       
       setDownloadSuccess(true)
       setTimeout(() => setDownloadSuccess(false), 3000)
+      setDownloading(false)
     } catch (error) {
       console.error('下载失败:', error)
       setDownloadError(error instanceof Error ? error.message : '下载失败')
       setTimeout(() => setDownloadError(null), 3000)
-    } finally {
       setDownloading(false)
     }
   }

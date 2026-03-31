@@ -4,6 +4,17 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePriceAlerts, PriceAlert } from '@/hooks/usePriceAlerts'
 
+
+export const metadata = {
+  title: 'Alerts | starLog',
+  description: 'Alerts 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 // 使用 Next.js 代理（自动转发到 8081 端口）
 const API_BASE = ''
 

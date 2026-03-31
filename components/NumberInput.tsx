@@ -1,164 +1,144 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 
 interface NumberInputProps {
-  onSubmit: (nums: [number, number, number]) => void
+  onSubmit: (numbers: [number, number, number]) => void
   onBack: () => void
 }
 
 export default function NumberInput({ onSubmit, onBack }: NumberInputProps) {
-  const [nums, setNums] = useState(['', '', ''])
+  const [numbers, setNumbers] = useState(['', '', ''])
   const [errors, setErrors] = useState(['', '', ''])
-
-  // 生成随机数
-  const generateRandom = useCallback(() => {
-    const randomNums = Array(3)
-      .fill(0)
-      .map(() => Math.floor(Math.random() * 100) + 1)
-      .map(String)
-    setNums(randomNums as [string, string, string])
-    setErrors(['', '', ''])
-  }, [])
-
-  // 清空输入
-  const handleClear = useCallback(() => {
-    setNums(['', '', ''])
-    setErrors(['', '', ''])
-  }, [])
+  const [isValid, setIsValid] = useState(false)
 
   // 验证单个数字
-  const validateNumber = useCallback((value: string, index: number): string => {
-    if (value === '') return ''
-    const num = parseInt(value, 10)
-    if (isNaN(num)) return '请输入数字'
-    if (num <= 0) return '请输入正整数'
-    if (num > 999) return '数字过大'
+  const validateNumber = (value: string, index: number): string => {
+    if (!value) return '请输入数字'
+    
+    const num = parseInt(value)
+    if (isNaN(num)) return '请输入有效数字'
+    if (num < 1 || num > 999) return '数字范围 1-999'
+    
     return ''
-  }, [])
-
-  // 处理输入变化
-  const handleInputChange = useCallback(
-    (index: number, value: string) => {
-      // 只允许输入数字
-      if (value !== '' && !/^\d+$/.test(value)) return
-
-      const newNums = [...nums]
-      newNums[index] = value
-      setNums(newNums as [string, string, string])
-
-      // 实时验证
-      const error = validateNumber(value, index)
-      const newErrors = [...errors]
-      newErrors[index] = error
-      setErrors(newErrors as [string, string, string])
-    },
-    [nums, errors, validateNumber]
-  )
-
-  // 提交
-  const handleSubmit = useCallback(() => {
-    // 验证所有数字
-    const newErrors = nums.map((num, i) => validateNumber(num, i))
-    setErrors(newErrors as [string, string, string])
-
-    const hasError = newErrors.some((error) => error !== '')
-    if (hasError) return
-
-    const hasEmpty = nums.some((num) => num === '')
-    if (hasEmpty) {
-      showToast('请输入完整的 3 个数字')
-      return
-    }
-
-    const parsed = nums.map((n) => parseInt(n, 10)) as [number, number, number]
-    onSubmit(parsed)
-  }, [nums, validateNumber, onSubmit])
-
-  // 显示提示
-  const showToast = (message: string) => {
-    // 简单的 alert 替代，实际项目中可以用 toast 组件
-    console.log('Toast:', message)
   }
 
-  // 判断是否可以提交
-  const canSubmit = nums.every((num) => num !== '' && /^\d+$/.test(num) && parseInt(num, 10) > 0)
+  // 处理输入变化
+  const handleChange = (index: number, value: string) => {
+    // 只允许输入数字
+    const filtered = value.replace(/[^0-9]/g, '')
+    
+    const newNumbers = [...numbers]
+    newNumbers[index] = filtered
+    setNumbers(newNumbers as [string, string, string])
+
+    // 实时验证
+    const error = validateNumber(filtered, index)
+    const newErrors = [...errors]
+    newErrors[index] = error
+    setErrors(newErrors)
+
+    // 检查所有输入是否有效
+    const allValid = newNumbers.every((num, i) => !validateNumber(num, i))
+    setIsValid(allValid)
+  }
+
+  // 随机生成
+  const generateRandom = () => {
+    const randomNumbers = Array(3).fill(0).map(() => 
+      Math.floor(Math.random() * 999) + 1
+    )
+    setNumbers(randomNumbers.map(String) as [string, string, string])
+    setErrors(['', '', ''])
+    setIsValid(true)
+  }
+
+  // 提交
+  const handleSubmit = () => {
+    if (!isValid) return
+    
+    const nums = numbers.map(Number) as [number, number, number]
+    onSubmit(nums)
+  }
 
   return (
-    <div className="rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-800">
-      <h3 className="mb-6 text-center text-xl font-bold text-amber-900 dark:text-amber-100">
-        请输入 3 个数字
-      </h3>
-
-      {/* 快捷操作 */}
-      <div className="mb-6 flex justify-center gap-3">
-        <button
-          type="button"
-          onClick={generateRandom}
-          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg"
-        >
-          <span>🎲</span>
-          <span>随机生成</span>
-        </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="flex items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600"
-        >
-          <span>🗑️</span>
-          <span>清空</span>
-        </button>
+    <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-800">
+      {/* 标题 */}
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-2xl font-bold text-amber-900 dark:text-amber-100">
+          🔢 数字起卦
+        </h2>
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          心中默念问题，输入 3 个数字
+        </p>
       </div>
 
       {/* 输入框 */}
-      <div className="mb-6 flex justify-center gap-4">
-        {nums.map((num, i) => (
-          <div key={i} className="flex flex-col items-center">
+      <div className="mb-8 grid gap-6 md:grid-cols-3">
+        {numbers.map((num, i) => (
+          <div key={i} className="text-center">
+            <label className="mb-2 block text-sm font-medium text-amber-800 dark:text-amber-200">
+              第{i + 1}个数字
+            </label>
             <input
               type="text"
               inputMode="numeric"
               value={num}
-              onChange={(e) => handleInputChange(i, e.target.value)}
-              placeholder={`数字${i + 1}`}
-              maxLength={3}
-              className={`w-24 rounded-xl border-2 px-4 py-3 text-center text-2xl transition-all focus:ring-2 focus:outline-none dark:bg-slate-700 dark:text-white ${
+              onChange={(e) => handleChange(i, e.target.value)}
+              placeholder="1-999"
+              className={`w-full rounded-xl border-2 p-4 text-center text-2xl font-bold transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                 errors[i]
-                  ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
+                  ? 'border-red-300 bg-red-50 text-red-600 dark:border-red-700 dark:bg-red-900/20'
                   : num
-                    ? 'border-green-500 focus:border-green-500 focus:ring-green-200'
-                    : 'border-amber-300 focus:border-amber-500 focus:ring-amber-200 dark:border-amber-700'
+                  ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100'
+                  : 'border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-600 dark:bg-slate-700 dark:text-white'
               }`}
+              maxLength={3}
             />
-            {errors[i] && <span className="mt-1 text-xs text-red-500">{errors[i]}</span>}
-            {num && !errors[i] && <span className="mt-1 text-xs text-green-500">✓</span>}
+            {errors[i] && (
+              <p className="mt-1 text-xs text-red-500">{errors[i]}</p>
+            )}
+            {num && !errors[i] && (
+              <p className="mt-1 text-xs text-green-500">✓ 有效</p>
+            )}
           </div>
         ))}
+      </div>
+
+      {/* 随机生成按钮 */}
+      <div className="mb-6 text-center">
+        <button
+          type="button"
+          onClick={generateRandom}
+          className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600"
+        >
+          🎲 随机生成
+        </button>
+      </div>
+
+      {/* 提示信息 */}
+      <div className="mb-8 rounded-xl bg-amber-50 p-4 text-center text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+        <p>✨ 请输入 1-999 之间的正整数</p>
+        <p className="mt-1 text-xs opacity-80">例如：3, 7, 9 或 123, 456, 789</p>
       </div>
 
       {/* 操作按钮 */}
       <div className="flex justify-center gap-4">
         <button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3 font-bold text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+          type="button"
+          onClick={onBack}
+          className="rounded-full bg-gray-200 px-8 py-3 font-medium text-gray-700 transition-all hover:bg-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600"
         >
-          确认起卦
+          ← 返回
         </button>
         <button
-          onClick={onBack}
-          className="rounded-full bg-gray-200 px-6 py-3 font-medium text-gray-700 transition-all hover:bg-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600"
+          type="button"
+          onClick={handleSubmit}
+          disabled={!isValid}
+          className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3 font-bold text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          返回
+          确认起卦 →
         </button>
-      </div>
-
-      {/* 提示信息 */}
-      <div className="mt-6 rounded-xl bg-amber-50 p-4 dark:bg-slate-700">
-        <p className="text-center text-sm leading-relaxed text-amber-700 dark:text-amber-300">
-          💡 <strong>心诚则灵</strong>：心中默念问题，随意输入 3 个数字
-          <br />
-          <span className="text-amber-600 dark:text-amber-400">或使用随机生成，让天意为您指引</span>
-        </p>
       </div>
     </div>
   )

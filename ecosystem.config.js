@@ -3,11 +3,10 @@ module.exports = {
     {
       name: 'starlog-frontend',
       cwd: '/home/admin/.openclaw/workspace/starLog',
-      script: 'npm',
-      args: 'run dev',
+      script: 'scripts/start-frontend.sh',
       max_memory_restart: '500M',
       env: {
-        NODE_ENV: 'development',
+        NODE_ENV: 'production',
         PORT: '3000',
         DATABASE_URL: 'postgresql://starlog:starlog123@localhost:5432/starlog?connection_limit=10',
         REDIS_URL: 'redis://localhost:6379',
@@ -21,7 +20,12 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: true,
       max_restarts: 10,
-      min_uptime: '10s'
+      min_uptime: '60s',
+      restart_delay: 5000,
+      kill_timeout: 30000,
+      max_memory_restart: '1G',
+      watch: false
+      // cron_restart removed - caused daily port conflicts at 04:00
     },
     {
       name: 'finance-api',

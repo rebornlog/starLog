@@ -1,92 +1,75 @@
 'use client'
 
+interface Line {
+  isYang: boolean
+  isMoving?: boolean
+}
+
 interface HexagramVisualProps {
-  structure: number[] // [从下到上，1=阳爻，0=阴爻]
-  size?: 'sm' | 'md' | 'lg'
-  animated?: boolean
-  highlightLines?: number[] // 动爻位置（0-5）
+  lines?: Line[]
+  structure?: number[]  // 0=阴，1=阳
+  name?: string
+  title?: string
+  showName?: boolean
 }
 
 export default function HexagramVisual({ 
-  structure, 
-  size = 'lg',
-  animated = true,
-  highlightLines = [],
+  lines, 
+  structure,
+  name, 
+  title,
+  showName = true 
 }: HexagramVisualProps) {
-  const sizeClasses = {
-    sm: { line: 'h-2', gap: 'gap-1', container: 'w-16' },
-    md: { line: 'h-3', gap: 'gap-1.5', container: 'w-24' },
-    lg: { line: 'h-4', gap: 'gap-2', container: 'w-32' },
-  }
-
-  const sizes = sizeClasses[size]
-
+  // 如果没有 lines，从 structure 转换
+  const actualLines: Line[] = lines || (structure ? structure.map(val => ({ isYang: val === 1 })) : [])
   return (
-    <div className={`${sizes.container} mx-auto`}>
-      <div className={`flex flex-col ${sizes.gap} ${animated ? 'animate-fade-in' : ''}`}>
-        {/* 从下到上显示 6 个爻 */}
-        {[5, 4, 3, 2, 1, 0].map((index) => {
-          const isMoving = highlightLines.includes(index)
-          return (
+    <div className="mb-8 flex flex-col items-center">
+      {/* 标题 */}
+      {title && (
+        <h3 className="mb-4 text-xl font-bold text-amber-900 dark:text-amber-100">
+          {title}
+        </h3>
+      )}
+
+      {/* 卦象 */}
+      <div className="mb-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-lg dark:from-slate-800 dark:to-slate-900">
+        <div className="flex flex-col-reverse gap-1">
+          {actualLines.map((line, i) => (
             <div
-              key={index}
-              className={`relative ${sizes.line} w-full flex items-center justify-center`}
-              style={{ animationDelay: `${index * 100}ms` }}
+              key={i}
+              className={`flex h-12 w-48 items-center justify-center transition-all ${
+                line.isMoving ? 'animate-pulse' : ''
+              }`}
             >
-              {structure[index] === 1 ? (
-                // 阳爻（实线）
-                <div className={`w-full h-full rounded-sm shadow-md ${
-                  isMoving 
-                    ? 'bg-gradient-to-r from-red-600 via-red-500 to-red-600 animate-pulse' 
-                    : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600'
-                }`} />
+              {line.isYang ? (
+                // 阳爻：连续
+                <div className="h-3 w-full rounded-full bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400" />
               ) : (
-                // 阴爻（虚线，中间断开）
-                <div className="w-full h-full flex gap-1">
-                  <div className={`flex-1 rounded-sm shadow-md ${
-                    isMoving 
-                      ? 'bg-gradient-to-r from-red-700 via-red-600 to-red-700' 
-                      : 'bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700'
-                  }`} />
-                  <div className="w-4" /> {/* 中间断开 */}
-                  <div className={`flex-1 rounded-sm shadow-md ${
-                    isMoving 
-                      ? 'bg-gradient-to-r from-red-700 via-red-600 to-red-700' 
-                      : 'bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700'
-                  }`} />
-                </div>
-              )}
-              {/* 动爻标记 */}
-              {isMoving && (
-                <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-xs text-red-500 font-bold animate-bounce">
-                  ●
+                // 阴爻：断开
+                <div className="flex w-full justify-between">
+                  <div className="h-3 w-[42%] rounded-full bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400" />
+                  <div className="h-3 w-[42%] rounded-full bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400" />
                 </div>
               )}
             </div>
-          )
-        })}
+          ))}
+        </div>
       </div>
-      
-      {/* 装饰性光晕 */}
-      {animated && (
-        <div className="absolute inset-0 bg-amber-400/10 blur-xl rounded-full -z-10 animate-pulse" />
+
+      {/* 卦名 */}
+      {showName && name && (
+        <div className="text-center">
+          <div
+            className="mb-2 text-5xl font-bold text-amber-900 dark:text-amber-100"
+            style={{ fontFamily: 'Ma Shan Zheng, cursive' }}
+          >
+            {name}
+          </div>
+          <div className="text-sm text-amber-700 dark:text-amber-300">
+            {lines.filter(l => l.isYang).length}阳{lines.filter(l => !l.isYang).length}阴
+          </div>
+        </div>
       )}
-      
-      <style jsx global>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out forwards;
-        }
-      `}</style>
     </div>
   )
 }

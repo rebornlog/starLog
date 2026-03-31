@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client'
 import { getCachedRecentPosts, setCachedRecentPosts } from '@/lib/redis'
 import { Metadata } from 'next'
 import Breadcrumb from '@/components/Breadcrumb'
+import HeroSection from '@/components/HeroSection'
 
 const prisma = new PrismaClient()
 
@@ -36,6 +37,70 @@ interface Post {
   readingTime: number
   viewCount: number
 }
+
+// 功能卡片配置
+const featureCards = [
+  {
+    icon: '📚',
+    title: '技术博客',
+    description: '记录开发路上的点点滴滴\n分享实战经验与技术思考',
+    color: 'from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30',
+    borderColor: 'border-green-200 dark:border-green-800',
+    textColor: 'text-green-800 dark:text-green-200',
+    linkColor: 'text-green-600 dark:text-green-400',
+    href: '/blog',
+  },
+  {
+    icon: '📈',
+    title: '金融市场',
+    description: 'A 股实时行情\n基金净值查询\n板块热度监控',
+    color: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30',
+    borderColor: 'border-blue-200 dark:border-blue-800',
+    textColor: 'text-blue-800 dark:text-blue-200',
+    linkColor: 'text-blue-600 dark:text-blue-400',
+    href: '/stocks',
+  },
+  {
+    icon: '🌟',
+    title: '星座运势',
+    description: '十二星座每日运势\n爱情·事业·健康全方位解析',
+    color: 'from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30',
+    borderColor: 'border-purple-200 dark:border-purple-800',
+    textColor: 'text-purple-800 dark:text-purple-200',
+    linkColor: 'text-purple-600 dark:text-purple-400',
+    href: '/horoscope',
+  },
+  {
+    icon: '☯️',
+    title: '易经问卦',
+    description: '古老智慧启迪现代生活\n在线起卦·卦象解析',
+    color: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
+    borderColor: 'border-amber-200 dark:border-amber-800',
+    textColor: 'text-amber-800 dark:text-amber-200',
+    linkColor: 'text-amber-600 dark:text-amber-400',
+    href: '/iching',
+  },
+  {
+    icon: '🥗',
+    title: '能量饮食',
+    description: '食物能量与体质匹配\n健康饮食建议',
+    color: 'from-teal-50 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30',
+    borderColor: 'border-teal-200 dark:border-teal-800',
+    textColor: 'text-teal-800 dark:text-teal-200',
+    linkColor: 'text-teal-600 dark:text-teal-400',
+    href: '/diet',
+  },
+  {
+    icon: '⏱️',
+    title: '时间轴',
+    description: '按时间顺序浏览所有文章\n探索知识的演进历程',
+    color: 'from-rose-50 to-red-100 dark:from-rose-900/30 dark:to-red-900/30',
+    borderColor: 'border-rose-200 dark:border-rose-800',
+    textColor: 'text-rose-800 dark:text-rose-200',
+    linkColor: 'text-rose-600 dark:text-rose-400',
+    href: '/timeline',
+  },
+]
 
 async function getRecentPosts() {
   try {
@@ -80,71 +145,32 @@ async function getRecentPosts() {
 export default async function Home() {
   const recentPosts = await getRecentPosts()
 
-  const featureCards = [
-    {
-      icon: '📚',
-      title: '技术博客',
-      description: '记录开发路上的点点滴滴\n分享实战经验与技术思考',
-      color: 'from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30',
-      borderColor: 'border-green-200 dark:border-green-800',
-      textColor: 'text-green-800 dark:text-green-200',
-      linkColor: 'text-green-600 dark:text-green-400',
-      href: '/blog',
-    },
-    {
-      icon: '📈',
-      title: '金融市场',
-      description: 'A 股实时行情追踪\n市场动态一目了然',
-      color: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30',
-      borderColor: 'border-blue-200 dark:border-blue-800',
-      textColor: 'text-blue-800 dark:text-blue-200',
-      linkColor: 'text-blue-600 dark:text-blue-400',
-      href: '/stocks',
-      external: false,
-    },
-    {
-      icon: '💰',
-      title: '基金市场',
-      description: '实时净值查询\n支持导入导出',
-      color: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30',
-      borderColor: 'border-emerald-200 dark:border-emerald-800',
-      textColor: 'text-emerald-800 dark:text-emerald-200',
-      linkColor: 'text-emerald-600 dark:text-emerald-400',
-      href: '/funds',
-      external: false,
-    },
-    {
-      icon: '✨',
-      title: '星座运势',
-      description: '十二星座每日运势查询\n爱情·事业·财运·幸运色',
-      color: 'from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30',
-      borderColor: 'border-purple-200 dark:border-purple-800',
-      textColor: 'text-purple-800 dark:text-purple-200',
-      linkColor: 'text-purple-600 dark:text-purple-400',
-      href: '/zodiac',
-    },
-    {
-      icon: '☯',
-      title: '易经问卦',
-      description: '六十四卦智慧启示\n随机·时间·数字三种起卦方式',
-      color: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30',
-      borderColor: 'border-amber-200 dark:border-amber-800',
-      textColor: 'text-amber-800 dark:text-amber-200',
-      linkColor: 'text-amber-600 dark:text-amber-400',
-      href: '/iching',
-    },
-    {
-      icon: '🥗',
-      title: '能量饮食',
-      description: '生辰八字分析五行\n定制专属能量饮食方案',
-      color: 'from-green-50 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30',
-      borderColor: 'border-green-200 dark:border-green-800',
-      textColor: 'text-green-800 dark:text-green-200',
-      linkColor: 'text-green-600 dark:text-green-400',
-      href: '/diet',
-    },
-  ]
-
+  return (
+    <>
+      <HeroSection />
+      
+      <main className="container mx-auto px-4 py-16">
+    <>
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold mb-4">核心功能</h2>
+        <p className="text-gray-600 dark:text-gray-400">探索 starLog 的丰富功能</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {featureCards.map((card, index) => (
+          <Link key={card.href} href={card.href}>
+            <div className={`bg-gradient-to-br ${card.color} rounded-2xl p-6 shadow-md hover:shadow-xl transition-all border ${card.borderColor}`}>
+              <div className="text-4xl mb-3">{card.icon}</div>
+              <h3 className={`text-xl font-bold mb-2 ${card.textColor}`}>{card.title}</h3>
+              <p className={`text-sm ${card.textColor} opacity-80`}>{card.description}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </>
+    </main>
+    </>
+  )
   const topics = [
     { icon: '📚', name: '技术', href: '/blog?category=tech' },
     { icon: '📈', name: '金融', href: '/stocks/' },

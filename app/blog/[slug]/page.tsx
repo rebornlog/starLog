@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { PrismaClient } from '@prisma/client'
 import { getCachedArticle, setCachedArticle } from '@/lib/redis'
 import TableOfContents from '@/components/TableOfContents'
+import MobileTableOfContentsToggle from '@/components/MobileTableOfContentsToggle'
 import ArticleContent from '@/components/ArticleContent'
 import ReadingProgress from '@/components/ReadingProgress'
 import FavoriteButton from '@/components/FavoriteButton'
@@ -117,65 +118,83 @@ export default async function PostPage({ params }: PageProps) {
   return (
     <>
       <ReadingProgress />
-      <article className="max-w-4xl mx-auto px-4 py-8">
-        <header className="mb-8">
-          <Link href="/blog/" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← 返回博客列表
-          </Link>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-              <div className="flex items-center gap-4 text-gray-600 flex-wrap">
-                <span>{new Date(post.publishedAt).toLocaleDateString('zh-CN')}</span>
-                <span>·</span>
-                <span>{post.readingTime} 分钟阅读</span>
-                <span>·</span>
-                <span>👁️ {post.viewCount}</span>
-              </div>
-            </div>
-            {/* 收藏按钮 */}
-            <div className="flex-shrink-0">
-              <FavoriteButton
-                postId={post.id}
-                postTitle={post.title}
-                postSlug={post.slug}
-              />
-            </div>
+      <MobileTableOfContentsToggle />
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        {/* 导航栏 */}
+        <nav className="sticky top-0 z-40 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <Link href="/blog/" className="text-blue-400 hover:text-blue-300 transition-colors">
+              ← 返回博客列表
+            </Link>
           </div>
-        </header>
-        <TableOfContents />
-        <ArticleContent content={post.content} />
-        {relatedPosts.length > 0 && (
-          <section className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-2">
-              <span>📖</span> 相关文章
-            </h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              {relatedPosts.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/blog/${p.slug}`}
-                  className="group block p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
-                >
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 mb-2">
-                    {p.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-                    {p.summary}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <span>📅 {new Date(p.publishedAt).toLocaleDateString('zh-CN')}</span>
-                    <span>·</span>
-                    <span>👁️ {p.viewCount}</span>
+        </nav>
+
+        <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* 文章主内容 */}
+            <div className="lg:col-span-3">
+              <article>
+                <header className="mb-8">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">{post.title}</h1>
+                  <div className="flex items-center gap-3 text-gray-400 flex-wrap text-sm sm:text-base">
+                    <span className="whitespace-nowrap">📅 {new Date(post.publishedAt).toLocaleDateString('zh-CN')}</span>
+                    <span className="hidden sm:inline">·</span>
+                    <span className="whitespace-nowrap">⏱️ {post.readingTime} 分钟阅读</span>
+                    <span className="hidden sm:inline">·</span>
+                    <span className="whitespace-nowrap">👁️ {post.viewCount} 次阅读</span>
+                    <span className="hidden sm:inline">·</span>
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm whitespace-nowrap">
+                      {post.category}
+                    </span>
                   </div>
-                </Link>
-              ))}
+                </header>
+                <ArticleContent content={post.content} />
+              </article>
+              {/* 相关文章 */}
+              {relatedPosts.length > 0 && (
+                <section className="mt-16 pt-8 border-t border-gray-700">
+                  <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-2">
+                    <span>📖</span> 相关文章
+                  </h2>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {relatedPosts.map((p) => (
+                      <Link
+                        key={p.id}
+                        href={`/blog/${p.slug}`}
+                        className="group block p-6 bg-gray-800/50 rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-700"
+                      >
+                        <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2 mb-3">
+                          {p.title}
+                        </h3>
+                        <p className="text-sm text-gray-400 line-clamp-2 mb-4">
+                          {p.summary}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>📅 {new Date(p.publishedAt).toLocaleDateString('zh-CN')}</span>
+                          <span>·</span>
+                          <span>👁️ {p.viewCount}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 评论系统 */}
+              <section className="mt-16">
+                <WalineComments slug={post.slug} />
+              </section>
             </div>
-          </section>
-        )}
-        {/* 评论系统 */}
-        <WalineComments slug={post.slug} />
-      </article>
+
+            {/* 侧边栏 - 目录导航 */}
+            <aside className="hidden lg:block">
+              <div className="sticky top-24">
+                <TableOfContents />
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
     </>
   )
 }

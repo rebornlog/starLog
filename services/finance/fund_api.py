@@ -324,18 +324,36 @@ async def get_fund_history(
 @app.get("/api/funds/{code}")
 async def get_fund_detail(code: str):
     """
-    获取基金详情（实时数据）
+    获取基金详情（实时数据 + 静态数据兜底）
     """
     cache_key = f"fund:detail:{code}"
     cached = get_cache(cache_key)
-    print(f"DEBUG: cache_key={cache_key}, cached={bool(cached)}")
     if cached:
-        # 直接返回缓存数据（已包含 success/data 结构）
         return cached if isinstance(cached, dict) and 'success' in cached else {"success": True, "data": cached, "source": "cache"}
     
     # 获取实时数据
     loop = asyncio.get_event_loop()
     realtime_data = await loop.run_in_executor(None, fetch_fund_netvalue, code)
+    
+    # 如果实时数据失败，尝试从 POPULAR_FUNDS 找静态数据
+    if not realtime_data:
+        static_fund = next((f for f in POPULAR_FUNDS if f.get("code") == code), None)
+        if static_fund:
+            # 返回静态数据（不含实时净值）
+            result = {
+                "success": True,
+                "data": {
+                    **static_fund,
+                    "netValue": 0,
+                    "unitNetValue": 0,
+                    "accNetValue": 0,
+                    "change": 0,
+                    "changePercent": 0,
+                    "updateTime": "静态数据"
+                },
+                "source": "static"
+            }
+            return result
     
     if not realtime_data:
         raise HTTPException(status_code=404, detail="基金数据不存在")

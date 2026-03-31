@@ -6,25 +6,21 @@ export default function ReadingProgress() {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    function updateProgress() {
-      const scrollTop = window.scrollY
+    const updateProgress = () => {
+      const scrolled = window.scrollY
       const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const scrollPercent = scrollTop / docHeight
-      setProgress(scrollPercent * 100)
+      const percent = docHeight > 0 ? (scrolled / docHeight) * 100 : 0
+      setProgress(percent)
     }
 
-    window.addEventListener('scroll', updateProgress)
-    updateProgress() // 初始化
-
+    window.addEventListener('scroll', updateProgress, { passive: true })
     return () => window.removeEventListener('scroll', updateProgress)
   }, [])
 
   return (
-    <div className="fixed top-0 left-0 w-full h-1 z-50 bg-transparent">
-      <div
-        className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400 transition-all duration-150 ease-out"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
+    <div 
+      className="fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 z-50 transition-all duration-150 shadow-lg"
+      style={{ width: `${progress}%` }}
+    />
   )
 }

@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
+
+
+export const metadata = {
+  title: '股票 - 实时行情 | starLog',
+  description: '股票 - 实时行情 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
   SectorIcon, BankIcon, TechIcon, ConsumerIcon, 
   MedicineIcon, EnergyIcon, ManufacturingIcon 
 } from '@/components/icons'

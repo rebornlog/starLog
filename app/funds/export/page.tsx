@@ -5,6 +5,17 @@ import Link from 'next/link'
 import { funds } from '@/data/funds'
 import { Fund } from '@/types/fund'
 
+
+export const metadata = {
+  title: 'Export | starLog',
+  description: 'Export 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 export default function FundExportPage() {
   const [selectedFunds, setSelectedFunds] = useState<Set<string>>(new Set())
   const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'txt'>('csv')

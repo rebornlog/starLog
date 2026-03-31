@@ -1,0 +1,539 @@
+---
+title: '前端服务重启 133 次：一次经典的端口占用故障排查'
+date: '2026-03-25'
+tags: ['故障排查', 'PM2', '端口占用', '运维', '案例分析']
+category: tech
+summary: '前端服务重启 133 次，错误 EADDRINUSE。本文完整记录故障排查过程，从现象到根因，从解决到预防，提供系统性故障排查方法论'
+draft: false
+---
+
+## 故障现象
+
+**时间：** 2026-03-25 08:16  
+**发现人：** 水镜先生  
+**影响：** 前端服务异常，PM2 显示重启 133 次
+
+### 告警信息
+
+```bash
+$ pm2 list
+
+│ id │ name                │ status    │ ↺    │
+│ 0  │ starlog-frontend    │ waiting … │ 133  │
+│ 1  │ finance-api         │ online    │ 2    │
+│ 2  │ fund-api            │ online    │ 7    │
+│ 3  │ api-proxy           │ online    │ 2    │
+```
+
+**关键信息：**
+- 服务名：starlog-frontend
+- 状态：waiting（等待中）
+- 重启次数：133 次
+- 其他服务正常
+
+### 错误日志
+
+```bash
+$ pm2 logs starlog-frontend --lines 50
+
+0|starlog- | Error: listen EADDRINUSE: address already in use :::3000
+0|starlog- |     at Server.setupListenHandle [as _listen2] (node:net:1817:16)
+0|starlog- |     at listenInCluster (node:net:1865:12)
+0|starlog- |     at Server.listen (node:net:1953:7)
+```
+
+**错误分析：**
+- 错误类型：`EADDRINUSE`
+- 错误信息：端口 3000 已被占用
+- 根本原因：PM2 无法绑定端口 3000
+
+---
+
+## 排查过程
+
+### 第一步：确认端口占用
+
+```bash
+$ netstat -tlnp | grep 3000
+
+tcp6       0      0 :::3000                 :::*                    LISTEN      349782/next-server
+```
+
+**发现：**
+- 端口 3000 确实被占用
+- 占用进程 PID：349782
+- 进程名：next-server
+
+### 第二步：检查进程来源
+
+```bash
+$ ps aux | grep 349782
+
+admin  349782  1.5  2.5 2207964 197392 ?  Sl   04:00   4:05  next-server (v15.5.12)
+```
+
+**关键信息：**
+- 启动用户：admin
+- 启动时间：04:00（已运行 4 小时）
+- 内存占用：197MB
+- 进程类型：next-server（Next.js 服务）
+
+### 第三步：判断进程归属
+
+```bash
+$ pm2 list | grep 349782
+
+# 无输出
+```
+
+**结论：**
+- 该进程**不是**PM2 管理的进程
+- 是手动启动的"僵尸进程"
+- 占用了端口 3000，导致 PM2 无法启动
+
+### 第四步：分析重启循环
+
+**PM2 重启逻辑：**
+```
+08:05:30  PM2 尝试启动 starlog-frontend
+08:05:30  端口 3000 被占用，启动失败
+08:05:35  PM2 自动重启（间隔 5 秒）
+08:05:35  端口 3000 仍被占用，再次失败
+08:05:40  PM2 再次重启
+...
+循环 133 次，直至今日
+```
+
+**为什么网站还能访问？**
+- 僵尸进程（PID 349782）在正常运行
+- 它占用了端口 3000，响应 HTTP 请求
+- 但它不受 PM2 管理，无日志、无监控
+
+---
+
+## 根因分析
+
+### 时间线还原
+
+```
+04:00  有人手动执行了 npm start 或 node server.js
+       ↓
+       启动了 Next.js 进程（PID 349782）
+       ↓
+       占用端口 3000
+       ↓
+08:05  PM2 尝试启动 starlog-frontend
+       ↓
+       端口 3000 已被占用
+       ↓
+       启动失败，PM2 自动重启
+       ↓
+       循环 133 次
+```
+
+### 为什么会手动启动？
+
+**可能原因：**
+1. 调试代码时手动启动
+2. 测试功能时绕过 PM2
+3. 忘记关闭手动启动的进程
+4. 使用了`npm run dev`而不是`pm2 start`
+
+### 为什么 PM2 不杀死旧进程？
+
+**PM2 的工作机制：**
+- PM2 只管理自己启动的进程
+- 不会主动杀死非 PM2 管理的进程
+- 避免误杀其他服务
+
+**设计合理，但需要配合规范操作。**
+
+---
+
+## 解决方案
+
+### 立即修复
+
+```bash
+# 1. 终止僵尸进程
+$ kill -9 349782
+
+# 2. 验证端口已释放
+$ netstat -tlnp | grep 3000
+# 无输出，说明端口已释放
+
+# 3. 重启 PM2 服务
+$ pm2 restart starlog-frontend
+
+# 4. 验证服务正常
+$ curl -I http://localhost:3000
+HTTP/1.1 200 OK
+```
+
+**修复时间：** 2 分钟  
+**服务恢复：** ✅
+
+### 长期预防
+
+#### 1. 创建端口清理脚本
+
+```bash
+#!/bin/bash
+# scripts/cleanup-port.sh
+
+PORT="${1:-3000}"
+
+# 检查端口占用
+PID=$(netstat -tlnp 2>/dev/null | grep ":$PORT " | awk '{print $7}' | cut -d'/' -f1)
+
+if [ -n "$PID" ]; then
+    # 检查是否为 PM2 进程
+    PM2_ID=$(pm2 list | grep "$PID" | awk '{print $1}')
+    
+    if [ -n "$PM2_ID" ]; then
+        pm2 stop $PM2_ID
+    else
+        kill -9 $PID
+    fi
+    
+    echo "✅ 端口 $PORT 已清理"
+fi
+```
+
+#### 2. 更新启动脚本
+
+```bash
+#!/bin/bash
+# start-services.sh
+
+# 启动前清理端口
+cleanup_port 3000
+cleanup_port 8081
+cleanup_port 8082
+
+# 检查僵尸进程
+ZOMBIE_PIDS=$(ps aux | grep "next-server" | grep -v "grep" | grep -v "pm2" | awk '{print $2}')
+for pid in $ZOMBIE_PIDS; do
+    kill -9 $pid
+done
+
+# 启动 PM2 服务
+pm2 start ecosystem.config.js
+```
+
+#### 3. 建立操作规范
+
+**禁止行为：**
+- ❌ 手动运行 `npm start`
+- ❌ 手动运行 `npm run dev`
+- ❌ 绕过 PM2 启动服务
+
+**正确做法：**
+- ✅ 使用 `pm2 start starlog-frontend`
+- ✅ 使用 `pm2 restart all`
+- ✅ 使用 `start-services.sh` 统一启动
+
+---
+
+## 故障排查方法论
+
+### 1. 现象确认
+
+**关键问题：**
+- 什么服务异常？
+- 错误信息是什么？
+- 影响范围多大？
+
+**工具：**
+```bash
+pm2 list          # 查看服务状态
+pm2 logs          # 查看错误日志
+netstat -tlnp     # 查看端口占用
+```
+
+### 2. 信息收集
+
+**收集内容：**
+- 错误日志
+- 系统日志
+- 监控数据
+- 变更记录
+
+**工具：**
+```bash
+pm2 logs --lines 100
+journalctl -xe
+top
+df -h
+```
+
+### 3. 根因分析
+
+**5 Why 分析法：**
+
+```
+Why 1: 为什么服务重启 133 次？
+→ 端口 3000 被占用
+
+Why 2: 为什么端口被占用？
+→ 有僵尸进程（PID 349782）
+
+Why 3: 为什么有僵尸进程？
+→ 手动启动未关闭
+
+Why 4: 为什么要手动启动？
+→ 调试代码绕过 PM2
+
+Why 5: 为什么能绕过 PM2？
+→ 缺乏操作规范和检查机制
+```
+
+**根因：** 缺乏操作规范和自动化检查
+
+### 4. 解决方案
+
+**短期：** 立即修复（终止进程）  
+**中期：** 工具预防（清理脚本）  
+**长期：** 规范建立（操作流程）
+
+### 5. 复盘总结
+
+**问题：**
+- 为什么能手动启动？
+- 为什么没有监控告警？
+- 为什么 4 小时才发现？
+
+**改进：**
+- 禁止手动启动（权限控制）
+- 增加进程监控（僵尸进程检测）
+- 缩短发现时间（监控告警）
+
+---
+
+## 监控告警优化
+
+### 增加僵尸进程检测
+
+```bash
+# 添加到 monitor-alert.sh
+
+check_zombie_process() {
+    log "🧹 检查僵尸进程..."
+    
+    # 检查非 PM2 管理的 Next.js 进程
+    ZOMBIE_PIDS=$(ps aux | grep "next-server" | grep -v "grep" | grep -v "pm2" | awk '{print $2}')
+    
+    if [ -n "$ZOMBIE_PIDS" ]; then
+        alert "发现僵尸进程：$ZOMBIE_PIDS"
+        
+        # 自动清理
+        for pid in $ZOMBIE_PIDS; do
+            kill -9 $pid
+            log "✅ 已终止僵尸进程 PID $pid"
+        done
+        
+        return 1
+    fi
+    
+    log "✅ 未发现僵尸进程"
+    return 0
+}
+```
+
+### 增加 PM2 重启次数告警
+
+```bash
+check_pm2_restart() {
+    log "📊 检查 PM2 重启次数..."
+    
+    RESTART_COUNT=$(pm2 list | grep "starlog-frontend" | awk '{print $8}')
+    
+    if [ "$RESTART_COUNT" -gt 50 ]; then
+        alert "PM2 服务异常重启：$RESTART_COUNT 次"
+        return 1
+    fi
+    
+    log "✅ PM2 重启次数正常：$RESTART_COUNT"
+    return 0
+}
+```
+
+---
+
+## 最佳实践
+
+### ✅ 应该做的
+
+1. **统一使用 PM2**
+   - 所有服务通过 PM2 启动
+   - 禁止手动启动进程
+   - 使用启动脚本
+
+2. **定期巡检**
+   ```bash
+   # 每天检查
+   pm2 list
+   netstat -tlnp | grep 3000
+   ps aux | grep next-server | grep -v pm2
+   ```
+
+3. **监控告警**
+   - 端口占用告警
+   - 重启次数告警
+   - 僵尸进程检测
+
+4. **文档记录**
+   - 故障处理流程
+   - 操作规范
+   - 应急预案
+
+5. **自动化**
+   - 自动清理端口
+   - 自动检测僵尸进程
+   - 自动告警通知
+
+### ❌ 避免的
+
+1. **手动启动服务**
+   - 容易忘记关闭
+   - 不受 PM2 管理
+   - 无日志无监控
+
+2. **绕过 PM2**
+   - 破坏统一管理
+   - 增加故障风险
+   - 难以排查问题
+
+3. **不查看日志**
+   - 盲目重启
+   - 错过关键信息
+   - 重复犯错
+
+4. **无监控告警**
+   - 故障发现晚
+   - 影响范围大
+   - 用户先报告
+
+5. **不复盘总结**
+   - 同样问题重复发生
+   - 无法提升能力
+   - 团队无法成长
+
+---
+
+## 工具脚本
+
+### 端口清理脚本
+
+```bash
+#!/bin/bash
+# scripts/cleanup-port.sh
+
+PORT="${1:-3000}"
+
+echo "🧹 清理端口 $PORT..."
+
+PID=$(netstat -tlnp 2>/dev/null | grep ":$PORT " | awk '{print $7}' | cut -d'/' -f1)
+
+if [ -n "$PID" ]; then
+    PM2_ID=$(pm2 list | grep "$PID" | awk '{print $1}')
+    
+    if [ -n "$PM2_ID" ]; then
+        echo "ℹ️  PM2 进程，先停止应用"
+        pm2 stop $PM2_ID
+    else
+        echo "🔨 非 PM2 进程，直接终止"
+        kill -9 $PID
+    fi
+    
+    sleep 2
+    
+    if netstat -tlnp 2>/dev/null | grep -q ":$PORT "; then
+        echo "❌ 端口仍然被占用"
+        exit 1
+    else
+        echo "✅ 端口 $PORT 已释放"
+    fi
+else
+    echo "✅ 端口 $PORT 未被占用"
+fi
+```
+
+### 僵尸进程检测脚本
+
+```bash
+#!/bin/bash
+# scripts/check-zombie.sh
+
+echo "🧹 检查僵尸进程..."
+
+ZOMBIES=$(ps aux | grep "next-server" | grep -v "grep" | grep -v "pm2" | awk '{print $2}')
+
+if [ -n "$ZOMBIES" ]; then
+    echo "⚠️  发现僵尸进程："
+    for pid in $ZOMBIES; do
+        echo "   PID: $pid"
+        read -p "是否终止？(y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            kill -9 $pid
+            echo "   ✅ 已终止"
+        fi
+    done
+else
+    echo "✅ 未发现僵尸进程"
+fi
+```
+
+---
+
+## 总结
+
+### 故障回顾
+
+| 项目 | 详情 |
+|------|------|
+| **现象** | 前端服务重启 133 次 |
+| **根因** | 手动启动的僵尸进程占用端口 |
+| **影响** | 服务不可用 4 小时 |
+| **修复** | 终止僵尸进程，重启 PM2 |
+| **时间** | 2 分钟修复 |
+
+### 经验教训
+
+1. **规范操作**
+   - 禁止手动启动服务
+   - 统一使用 PM2
+   - 使用启动脚本
+
+2. **监控告警**
+   - 端口占用检测
+   - 重启次数告警
+   - 僵尸进程检测
+
+3. **工具预防**
+   - 端口清理脚本
+   - 自动化检查
+   - 一键修复
+
+4. **文档沉淀**
+   - 故障处理流程
+   - 操作规范
+   - 应急预案
+
+### 核心收获
+
+**故障排查方法论：**
+1. 现象确认 → 2. 信息收集 → 3. 根因分析 → 4. 解决方案 → 5. 复盘总结
+
+**预防措施：**
+- 工具化（自动化脚本）
+- 规范化（操作流程）
+- 监控化（实时告警）
+
+**记住：同样的故障不能犯两次！** 🚨
+
+---
+
+**代码已开源：** https://github.com/rebornlog/starLog  
+**欢迎交流：** 944183654@qq.com

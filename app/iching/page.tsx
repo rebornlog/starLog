@@ -4,12 +4,26 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { castHexagram, interpretHexagram } from '@/lib/iching/divination'
 import { HEXAGRAMS } from '@/lib/iching/data'
-import { addFavorite, addHistory, isFavorited, removeFavorite } from '@/lib/storage'
+import { addFavorite, addHistory as addStorageHistory, isFavorited, removeFavorite } from '@/lib/storage'
+import { addHistory as addDivinationHistory } from '@/lib/iching/history'
 import { useToast } from '@/components/Toast'
 import HexagramVisual from '@/components/HexagramVisual'
 import Accordion from '@/components/Accordion'
 import DivinationGuide from '@/components/DivinationGuide'
 import NumberInput from '@/components/NumberInput'
+import EnhancedHexagramResult from '@/components/EnhancedHexagramResult'
+import EnhancedDivinationGuide from '@/components/EnhancedDivinationGuide'
+
+
+export const metadata = {
+  title: 'Iching | starLog',
+  description: 'Iching 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
 
 type Method = 'random' | 'time' | 'number'
 type PageState = 'guide' | 'select' | 'input' | 'confirm' | 'result'
@@ -34,21 +48,17 @@ export default function IChingPage() {
   // 起卦
   const handleDivination = () => {
     setLoading(true)
-
-    // 模拟思考时间，增加仪式感
-    setTimeout(() => {
-      try {
-        const divResult = castHexagram(method || 'random', numbers || undefined)
-        const interpretation = interpretHexagram(divResult)
-        setResult({ ...divResult, interpretation })
-        setPageState('result')
-      } catch (error) {
-        console.error('起卦失败:', error)
-        showToast('起卦失败，请重试', 'error')
-      } finally {
-        setLoading(false)
-      }
-    }, 1500)
+    try {
+      const divResult = castHexagram(method || 'random', numbers || undefined)
+      const interpretation = interpretHexagram(divResult)
+      setResult({ ...divResult, interpretation })
+      setPageState('result')
+    } catch (error) {
+      console.error('起卦失败:', error)
+      showToast('起卦失败，请重试', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 重置
@@ -92,7 +102,7 @@ export default function IChingPage() {
   const renderContent = () => {
     switch (pageState) {
       case 'guide':
-        return <DivinationGuide onComplete={handleGuideComplete} />
+        return <EnhancedDivinationGuide onComplete={handleGuideComplete} />
 
       case 'select':
         return (
@@ -178,7 +188,7 @@ export default function IChingPage() {
       case 'result':
         return result ? (
           <>
-            <HexagramResult result={result} onReset={handleReset} />
+            <EnhancedHexagramResult result={result} onReset={handleReset} />
 
             {/* 收藏按钮 */}
             {result?.hexagram && (
@@ -199,11 +209,19 @@ export default function IChingPage() {
                         title: `第${result.hexagram.number}卦 - ${result.hexagram.name}`,
                         data: { hexagram: result.hexagram, interpretation: result.interpretation },
                       })
-                      addHistory({
+                      addStorageHistory({
                         type: 'iching',
                         id: `${id}-${Date.now()}`,
                         title: `第${result.hexagram.number}卦 - ${result.hexagram.name}`,
                         data: { hexagram: result.hexagram },
+                      })
+                      // 添加到问卦历史
+                      addDivinationHistory({
+                        hexagramId: result.hexagram.id,
+                        hexagramName: result.hexagram.name,
+                        method: result.method,
+                        changingLines: result.changingLines,
+                        transformedHexagramId: result.transformedHexagram?.id,
                       })
                       setFavorited(true)
                       showToast('收藏成功！⭐', 'success')
@@ -266,7 +284,14 @@ export default function IChingPage() {
 
         {/* 导航 */}
         {pageState !== 'result' && (
-          <div className="mt-8 text-center">
+          <div className="mt-8 flex justify-center gap-6">
+            <Link
+              href="/iching/history"
+              className="inline-flex items-center gap-2 text-amber-700 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+            >
+              <span>📜</span>
+              <span>问卦历史</span>
+            </Link>
             <a
               href="/zodiac"
               className="inline-flex items-center text-amber-700 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
@@ -282,7 +307,7 @@ export default function IChingPage() {
 
 // 卦象结果组件
 function HexagramResult({ result, onReset }: { result: any; onReset: () => void }) {
-  const { hexagram, character, method, timestamp, interpretation, structure } = result
+  const { hexagram, character, method, timestamp, interpretation, structure, transformedHexagram, transformedStructure, changingLines } = result
 
   if (!hexagram) {
     return <div>卦象未找到</div>
@@ -315,6 +340,28 @@ function HexagramResult({ result, onReset }: { result: any; onReset: () => void 
     },
   ]
 
+  // 分享功能
+  const handleShare = async () => {
+    const shareData = {
+      title: `易经问卦 - ${hexagram.name}卦`,
+      text: `【${hexagram.name}卦】${hexagram.judgment}\n\n${interpretation}`,
+      url: window.location.href,
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (error) {
+        console.error('分享失败:', error)
+      }
+    } else {
+      // 降级方案：复制到剪贴板
+      const text = `${shareData.title}\n${shareData.text}\n\n${shareData.url}`
+      await navigator.clipboard.writeText(text)
+      alert('已复制到剪贴板，可以粘贴分享了！')
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* 卦象头部 */}
@@ -334,7 +381,34 @@ function HexagramResult({ result, onReset }: { result: any; onReset: () => void 
           起卦方式：{method === 'random' ? '随机' : method === 'time' ? '时间' : '数字'} ·{' '}
           {timestamp.toLocaleString('zh-CN')}
         </div>
+        
+        {/* 变爻提示 */}
+        {changingLines && Array.isArray(changingLines) && changingLines.length > 0 && (
+          <div className="mt-4 rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+            <span className="text-sm font-medium text-red-600 dark:text-red-400">
+              🔮 变爻：{changingLines.map(pos => `第${pos}爻`).join('、')}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* 变卦展示（如果有） */}
+      {transformedHexagram && transformedStructure && (
+        <div className="rounded-2xl bg-gradient-to-r from-orange-50 to-red-50 p-8 shadow-xl dark:from-slate-700 dark:to-slate-600">
+          <h3 className="mb-4 text-center text-xl font-bold text-orange-900 dark:text-orange-100">
+            变卦 · {transformedHexagram.name}卦
+          </h3>
+          <div className="mb-4 flex justify-center">
+            <HexagramVisual structure={transformedStructure} size="md" animated={true} />
+          </div>
+          <p className="text-center text-orange-700 dark:text-orange-300">
+            {transformedHexagram.judgment}
+          </p>
+          <p className="mt-2 text-sm text-orange-600 dark:text-orange-400">
+            💡 启示：事物正在向"{transformedHexagram.name}"的方向发展
+          </p>
+        </div>
+      )}
 
       {/* 使用 Accordion 展示卦辞、象传、解读 */}
       <Accordion items={accordionItems} />
@@ -347,17 +421,17 @@ function HexagramResult({ result, onReset }: { result: any; onReset: () => void 
         >
           再占一卦
         </button>
+        <button
+          onClick={handleShare}
+          className="rounded-full border-2 border-blue-300 bg-white px-6 py-3 font-medium text-blue-700 transition-all hover:bg-blue-50 dark:border-blue-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+        >
+          📤 分享此卦
+        </button>
         <a
           href="/zodiac"
           className="rounded-full border-2 border-purple-300 bg-white px-6 py-3 font-medium text-purple-700 transition-all hover:bg-purple-50 dark:border-purple-700 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-slate-700"
         >
           星座运势
-        </a>
-        <a
-          href="/diet"
-          className="rounded-full border-2 border-green-300 bg-white px-6 py-3 font-medium text-green-700 transition-all hover:bg-green-50 dark:border-green-700 dark:bg-slate-800 dark:text-green-300 dark:hover:bg-slate-700"
-        >
-          能量饮食
         </a>
         <Link
           href="/favorites"

@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Breadcrumb from '@/components/Breadcrumb'
 
+
+export const metadata = {
+  title: 'Favorites | starLog',
+  description: 'Favorites 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 interface FavoritePost {
   id: string
   slug: string

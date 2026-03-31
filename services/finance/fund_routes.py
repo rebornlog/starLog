@@ -6,7 +6,9 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
 import asyncio
 import sys
-sys.path.insert(0, '/home/admin/.openclaw/workspace/starLog/services')
+import os
+# 添加父目录到路径（/home/admin/.openclaw/workspace/starLog/services）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tiantian_fund import TianTianFundAPI, get_fund_netvalue_sync, get_funds_batch_sync
 from data.funds import funds as static_funds
 
@@ -63,35 +65,54 @@ async def get_fund_detail(code: str) -> Dict[str, Any]:
     """
     获取基金详情（实时数据）
     """
+    # 调试日志
+    print(f"DEBUG: 请求基金 {code}, static_funds 数量：{len(static_funds)}")
+    
     # 先从静态数据找基本信息
     static_fund = next((f for f in static_funds if f['code'] == code), None)
+    print(f"DEBUG: static_fund 找到：{bool(static_fund)}")
     
     # 获取实时净值
+    realtime_data = None
     try:
         realtime_data = await asyncio.get_event_loop().run_in_executor(
             None, get_fund_netvalue_sync, code
         )
+        print(f"DEBUG: realtime_data: {realtime_data is not None}")
+        # 检查实时数据是否有效
+        if realtime_data and not realtime_data.get('code'):
+            realtime_data = None
     except Exception as e:
-        realtime_data = None
+        # 静默失败，使用静态数据
+        print(f"DEBUG: 实时数据获取失败：{e}")
+        pass
     
-    if not static_fund and not realtime_data:
-        raise HTTPException(status_code=404, detail="基金不存在")
-    
-    # 合并数据（实时数据优先）
-    if realtime_data:
-        fund = {
-            **(static_fund or {}),
-            **realtime_data,
-            "code": code
+    # 如果静态数据存在，直接返回（实时数据可能失败）
+    if static_fund:
+        # 尝试合并实时数据
+        if realtime_data:
+            fund = {**static_fund, **realtime_data, "code": code}
+        else:
+            fund = static_fund
+        
+        print(f"DEBUG: 返回静态数据，名称：{fund.get('name')}")
+        return {
+            "success": True,
+            "data": fund,
+            "source": "realtime" if realtime_data else "static"
         }
-    else:
-        fund = static_fund
     
-    return {
-        "success": True,
-        "data": fund,
-        "source": "realtime" if realtime_data else "static"
-    }
+    # 没有静态数据，尝试只用实时数据
+    if realtime_data:
+        return {
+            "success": True,
+            "data": realtime_data,
+            "source": "realtime"
+        }
+    
+    # 都没有，返回 404
+    print(f"DEBUG: 基金 {code} 不存在")
+    raise HTTPException(status_code=404, detail="基金不存在")
 
 
 @router.get("/{code}/history")

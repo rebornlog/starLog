@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
 
 interface Heading {
   id: string
@@ -9,125 +8,152 @@ interface Heading {
   level: number
 }
 
-export default function TableOfContents() {
+interface TableOfContentsProps {
+  isMobile?: boolean
+  onClose?: () => void
+}
+
+export default function TableOfContents({ isMobile = false, onClose }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<Heading[]>([])
   const [activeId, setActiveId] = useState<string>('')
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const pathname = usePathname()
 
   useEffect(() => {
-    // 提取文章中的所有标题
+    // 提取所有标题
     const elements = Array.from(document.querySelectorAll('h2, h3'))
-    const headingList: Heading[] = elements
-      .map((el) => ({
-        id: el.id || el.textContent?.toLowerCase().replace(/\s+/g, '-') || '',
-        text: el.textContent || '',
-        level: el.tagName === 'H2' ? 2 : 3,
-      }))
-      .filter((h) => h.id !== '')
+    const items: Heading[] = elements.map((el) => ({
+      id: el.id,
+      text: el.textContent || '',
+      level: el.tagName === 'H2' ? 2 : 3,
+    }))
+    setHeadings(items)
 
-    setHeadings(headingList)
-
-    // 设置元素 ID（如果原本没有）
-    elements.forEach((el, index) => {
-      if (!el.id) {
-        el.id = `heading-${index}`
-      }
-    })
-  }, [pathname])
-
-  useEffect(() => {
     // 监听滚动，高亮当前章节
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100
-
-      for (const heading of headings) {
-        const element = document.getElementById(heading.id)
-        if (element) {
-          const offsetTop = element.offsetTop
-          const offsetHeight = element.offsetHeight
-
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setActiveId(heading.id)
-            break
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id)
           }
-        }
-      }
-    }
+        })
+      },
+      { rootMargin: '-100px 0px -80% 0px' }
+    )
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [headings])
+    elements.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
 
-  // 平滑滚动到指定位置
-  const scrollToHeading = (id: string) => {
+  const handleClick = (id: string) => {
     const element = document.getElementById(id)
     if (element) {
-      const offsetTop = element.offsetTop - 80
-      window.scrollTo({
-        top: offsetTop,
-        behavior: 'smooth',
-      })
+      element.scrollIntoView({ behavior: 'smooth' })
       setActiveId(id)
+      // 移动端点击后关闭目录
+      if (isMobile && onClose) {
+        onClose()
+      }
     }
   }
 
-  if (headings.length === 0) {
-    return null
-  }
-
-  return (
-    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 hidden lg:block">
-      {/* 折叠按钮 */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="mb-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700"
-        title={isCollapsed ? '展开目录' : '收起目录'}
-      >
-        <svg
-          className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+  // 移动端样式
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+        <div 
+          className="absolute right-0 top-0 h-full w-80 bg-gray-900 shadow-2xl overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {/* 目录面板 */}
-      {!isCollapsed && (
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 max-h-[70vh] overflow-y-auto">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-            <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            目录
-          </h3>
-          
-          <nav className="space-y-1">
+          <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              目录
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors p-2"
+              aria-label="关闭目录"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <ul className="p-4 space-y-2">
             {headings.map((heading) => (
-              <button
+              <li
                 key={heading.id}
-                onClick={() => scrollToHeading(heading.id)}
-                className={`block w-full text-left text-sm py-1.5 px-3 rounded-lg transition-all duration-200 ${
-                  heading.level === 3 ? 'ml-4' : ''
-                } ${
-                  activeId === heading.id
-                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-medium'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`
+                  text-sm transition-all cursor-pointer rounded px-3 py-2
+                  ${heading.level === 3 ? 'ml-4' : ''}
+                  ${activeId === heading.id
+                    ? 'bg-blue-500/20 text-blue-400 font-medium border-l-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                  }
+                `}
+                onClick={() => handleClick(heading.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleClick(heading.id)
+                  }
+                }}
               >
                 {heading.text}
-              </button>
+              </li>
             ))}
-          </nav>
-
-          {/* 底部提示 */}
-          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 text-center">
-            点击跳转 · 滚动高亮
-          </p>
+            {headings.length === 0 && (
+              <li className="text-gray-500 text-center py-8">
+                暂无目录
+              </li>
+            )}
+          </ul>
         </div>
-      )}
-    </div>
+      </div>
+    )
+  }
+
+  // 桌面端样式（原有样式）
+  return (
+    <nav className="sticky top-20 bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-gray-700 shadow-xl">
+      <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        目录
+      </h3>
+      <ul className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+        {headings.map((heading) => (
+          <li
+            key={heading.id}
+            className={`
+              text-sm transition-all cursor-pointer rounded px-2 py-1.5
+              ${heading.level === 3 ? 'ml-4' : ''}
+              ${activeId === heading.id
+                ? 'bg-blue-500/20 text-blue-400 font-medium border-l-2 border-blue-400 pl-3'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+              }
+            `}
+            onClick={() => handleClick(heading.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleClick(heading.id)
+              }
+            }}
+          >
+            {heading.text}
+          </li>
+        ))}
+        {headings.length === 0 && (
+          <li className="text-gray-500 text-center py-8">
+            暂无目录
+          </li>
+        )}
+      </ul>
+    </nav>
   )
 }

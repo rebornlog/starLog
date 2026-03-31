@@ -6,6 +6,17 @@ import { Fund, FundType, RiskLevel } from '@/types/fund'
 import FundCardSkeleton from '@/components/funds/FundCardSkeleton'
 import FundListSkeleton from '@/components/FundListSkeleton'
 
+
+export const metadata = {
+  title: '基金 - 实时净值查询 | starLog',
+  description: '基金 - 实时净值查询 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 const FUND_TYPES: (FundType | '全部')[] = ['全部', '股票型', '混合型', '债券型', '货币型', 'QDII', '指数型']
 const RISK_LEVELS: (RiskLevel | '全部')[] = ['全部', '低', '中低', '中', '中高', '高']
 
@@ -31,17 +42,30 @@ export default function FundsPage() {
   const [cacheHit, setCacheHit] = useState(false)
   const [pulling, setPulling] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
+  const [retryCount, setRetryCount] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)  // 刷新动画状态
   const touchStartY = useRef(0)
   const touchCurrentY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   
-  const fetchFunds = useCallback(async () => {
+  const fetchFunds = useCallback(async (isRetry = false) => {
     try {
+      if (!isRetry) {
+        setRefreshing(true)  // 开始刷新动画
+      }
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/funds/list?fund_type=all&limit=100`)
+      
+      // 添加时间戳参数避免浏览器缓存
+      const timestamp = Date.now()
+      const response = await fetch(`${API_BASE}/api/funds/list?fund_type=all&limit=100&_t=${timestamp}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
       
       if (!response.ok) {
-        throw new Error('获取基金数据失败')
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
       
       const result = await response.json()
@@ -70,30 +94,44 @@ export default function FundsPage() {
             name: item.name,
             type: fundType,
             company: '',
-            netValue: item.unitNetValue || 0,  // 修正字段名
-            change: item.dailyGrowth || 0,     // 修正字段名
-            changePercent: item.dailyGrowth || 0, // 修正字段名
+            netValue: item.unitNetValue || 0,
+            change: item.dailyGrowth || 0,
+            changePercent: item.dailyGrowth || 0,
             riskLevel: riskLevel,
             tags: [],
-            updateTime: item.date || item.updateTime  // 支持两种字段名
+            updateTime: item.date || item.updateTime
           }
         })
         
         setFunds(formattedFunds)
         setCacheHit(result.cacheHit || false)
-        // 优先使用 API 返回的时间戳，否则使用本地时间
         setLastUpdate(result.timestamp ? new Date(result.timestamp).toLocaleTimeString('zh-CN') : new Date().toLocaleTimeString('zh-CN'))
         setError(null)
+        setRetryCount(0)  // 重置重试计数
       } else {
         throw new Error('数据格式错误')
       }
     } catch (err) {
       console.error('获取基金数据失败:', err)
-      setError(err instanceof Error ? err.message : '未知错误')
+      const errorMsg = err instanceof Error ? err.message : '未知错误'
+      
+      // 自动重试机制（最多 3 次，指数退避）
+      if (!isRetry && retryCount < 3) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 5000)
+        console.log(`第 ${retryCount + 1} 次重试，延迟 ${delay}ms`)
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1)
+          fetchFunds(true)
+        }, delay)
+        return
+      }
+      
+      setError(errorMsg)
     } finally {
       setLoading(false)
+      setRefreshing(false)  // 结束刷新动画
     }
-  }, [])
+  }, [retryCount])
 
   // 初始加载和定时刷新
   useEffect(() => {
@@ -208,14 +246,17 @@ export default function FundsPage() {
       {/* 下拉刷新指示器 */}
       {pulling && (
         <div 
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-blue-500/90 text-white text-sm py-2 transition-all duration-200"
-          style={{ height: `${pullDistance}px`, opacity: pullDistance / 150 }}
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm py-2 transition-all duration-200 shadow-lg"
+          style={{ height: `${Math.max(pullDistance, 60)}px`, opacity: Math.min(pullDistance / 150, 1) }}
         >
-          {pullDistance > 80 ? (
-            <span>🔄 释放刷新</span>
-          ) : (
-            <span>⬇️ 下拉刷新</span>
-          )}
+          <div className="flex items-center gap-2">
+            <span className={`text-xl ${pullDistance > 80 ? 'animate-spin' : ''}`}>
+              {pullDistance > 80 ? '🔄' : '⬇️'}
+            </span>
+            <span className="font-medium">
+              {pullDistance > 80 ? '释放刷新' : '下拉刷新'}
+            </span>
+          </div>
         </div>
       )}
       
@@ -275,14 +316,21 @@ export default function FundsPage() {
             </label>
             <button
               onClick={fetchFunds}
-              disabled={loading}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                loading
+              disabled={loading || refreshing}
+              className={`px-3 py-1 text-sm rounded transition-all transform ${
+                loading || refreshing
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600'
+                  : 'bg-blue-500 hover:bg-blue-600 hover:scale-105'
               } text-white`}
             >
-              {loading ? '🔄 刷新中...' : '🔄 刷新数据'}
+              {loading || refreshing ? (
+                <span className="inline-flex items-center gap-1">
+                  <span className="animate-spin">🔄</span>
+                  <span>刷新中...</span>
+                </span>
+              ) : (
+                <span>🔄 刷新数据</span>
+              )}
             </button>
           </div>
         </div>

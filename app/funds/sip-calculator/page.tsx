@@ -3,6 +3,17 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
+
+export const metadata = {
+  title: 'Sip Calculator | starLog',
+  description: 'Sip Calculator 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 interface CalculationResult {
   month: number
   invested: number

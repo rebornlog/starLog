@@ -4,10 +4,18 @@
 功能：股票行情、基金净值（暂时禁用）
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+
+class FundBatchRequest(BaseModel):
+    """批量基金请求模型"""
+    codes: List[str] = Field(..., description="基金代码列表", max_items=20)
+
+class SimpleBatchRequest(BaseModel):
+    """简单批量请求（兼容两种格式）"""
+    codes: List[str]
 import requests
 import redis
 import json
@@ -710,8 +718,8 @@ async def get_fund_detail(fund_code: str):
                 "code": data.get("code", fund_code),
                 "name": data.get("name", ""),
                 "unitNetValue": float(data.get("unitNetValue", 0) or 0),
-                "accNetValue": float(data.get("unitNetValue", 0) or 0),
-                "dailyGrowth": float(data.get("changePercent", 0) or 0),
+                "accNetValue": float(data.get("accNetValue", data.get("unitNetValue", 0)) or 0),  # 修复：使用正确的 accNetValue 字段
+                "dailyGrowth": float(data.get("changePercent", 0) or 0),  # 涨跌幅百分比
                 "updateTime": data.get("updateTime", ""),
             }
         return None
@@ -720,6 +728,60 @@ async def get_fund_detail(fund_code: str):
         return None
 
 
+@app.get("/api/funds/batch")
+async def get_funds_batch(codes: str = Query(..., description="基金代码列表，逗号分隔，如：000001,110001,375010")):
+    """
+    批量获取基金数据（优化多个基金查询）
+    使用并发请求减少总耗时
+    
+    请求格式：GET /api/funds/batch?codes=000001,110001,375010
+    """
+    code_list = [c.strip() for c in codes.split(',') if c.strip()]
+    if not code_list:
+        return {"success": False, "error": "codes 参数不能为空", "funds": [], "count": 0}
+    
+    cache_key = f"funds:batch:{':'.join(sorted(codes))}"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+    
+    try:
+        import asyncio
+        
+        # 并发获取所有基金数据
+        tasks = [get_fund_detail(code) for code in code_list[:20]]  # 限制最多 20 只
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        funds = []
+        for i, result in enumerate(results):
+            if result and not isinstance(result, Exception):
+                funds.append(result)
+            else:
+                # 失败时返回基本信息
+                funds.append({
+                    "code": code_list[i],
+                    "name": "未知",
+                    "unitNetValue": 0,
+                    "accNetValue": 0,
+                    "dailyGrowth": 0,
+                    "updateTime": "",
+                    "error": str(results[i]) if isinstance(results[i], Exception) else "获取失败"
+                })
+        
+        response_data = {
+            "success": True,
+            "funds": funds,
+            "count": len(funds),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        set_cache(cache_key, response_data, ttl=120)  # 2 分钟缓存
+        return response_data
+        
+    except Exception as e:
+        print(f"批量获取基金数据失败：{e}")
+        return {"success": False, "funds": [], "error": str(e), "count": 0}
+
 @app.get("/api/funds/{code}")
 async def get_fund_detail_route(code: str):
     """获取基金详情"""
@@ -727,6 +789,48 @@ async def get_fund_detail_route(code: str):
     if fund:
         return {"success": True, "data": fund}
     raise HTTPException(status_code=404, detail="基金不存在")
+    
+    cache_key = f"funds:batch:{':'.join(sorted(codes))}"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+    
+    try:
+        import asyncio
+        
+        # 并发获取所有基金数据
+        tasks = [get_fund_detail(code) for code in code_list[:20]]  # 限制最多 20 只
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        funds = []
+        for i, result in enumerate(results):
+            if result and not isinstance(result, Exception):
+                funds.append(result)
+            else:
+                # 失败时返回基本信息
+                funds.append({
+                    "code": code_list[i],
+                    "name": "未知",
+                    "unitNetValue": 0,
+                    "accNetValue": 0,
+                    "dailyGrowth": 0,
+                    "updateTime": "",
+                    "error": str(results[i]) if isinstance(results[i], Exception) else "获取失败"
+                })
+        
+        response_data = {
+            "success": True,
+            "funds": funds,
+            "count": len(funds),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        set_cache(cache_key, response_data, ttl=120)  # 2 分钟缓存
+        return response_data
+        
+    except Exception as e:
+        print(f"批量获取基金数据失败：{e}")
+        return {"success": False, "funds": [], "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

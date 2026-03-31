@@ -9,6 +9,17 @@ import FundFeeTable from '@/components/funds/FundFeeTable'
 import FundProfileCard from '@/components/funds/FundProfileCard'
 import { useWatchlist } from '@/hooks/useWatchlist'
 
+
+export const metadata = {
+  title: '[Code] | starLog',
+  description: '[Code] 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 export default function FundDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -25,13 +36,22 @@ export default function FundDetailPage() {
   useEffect(() => {
     setLoading(true)
     fetch(`/api/funds/${code}`)
-      .then(res => res.json())
+      .then(res => {
+        console.log('API 响应状态:', res.status)
+        return res.json()
+      })
       .then(data => {
-        if (data.success) {
-          setFund(data)
+        console.log('API 返回数据:', data)
+        if (data && data.success && data.data) {
+          console.log('设置基金数据:', data.data)
+          setFund(data.data)
+        } else {
+          console.error('数据格式错误:', data)
         }
       })
-      .catch(err => console.error('获取基金数据失败:', err))
+      .catch(err => {
+        console.error('获取基金数据失败:', err)
+      })
       .finally(() => setLoading(false))
   }, [code])
 
@@ -299,7 +319,13 @@ export default function FundDetailPage() {
                     </div>
                   ) : historyData.length > 0 ? (
                     <>
-                      <FundChart data={historyData} height={300} />
+                      {/* 暂时禁用图表，只显示表格 */}
+                      {/* <FundChart data={historyData} height={300} /> */}
+                      <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                          ⚠️ 图表组件正在调试中，暂时显示表格数据
+                        </p>
+                      </div>
                       {/* 数据表格 */}
                       <div className="mt-4 overflow-x-auto">
                         <table className="min-w-full text-sm">

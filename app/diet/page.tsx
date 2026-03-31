@@ -9,6 +9,17 @@ import { useToast } from '@/components/Toast'
 import SEO from '@/components/SEO'
 import { Skeleton } from '@/components/Skeleton'
 
+
+export const metadata = {
+  title: 'Diet | starLog',
+  description: 'Diet 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 // 动态导入重型组件
 const RadarChart = dynamic(() => import('@/components/RadarChart'), {
   loading: () => <div className="h-64 flex items-center justify-center"><Skeleton className="w-full h-full" /></div>,

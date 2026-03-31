@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// 使用环境变量配置 API 地址，生产环境使用相对路径通过 Next.js 代理
+const FINANCE_API_URL = process.env.FINANCE_API_URL || 'http://localhost:8081'
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -10,7 +13,7 @@ export async function GET(request: Request) {
     }
     
     // 调用金融 API 获取股票数据
-    const res = await fetch('http://localhost:8081/api/stocks/popular')
+    const res = await fetch(`${FINANCE_API_URL}/api/stocks/popular`)
     const stocks = await res.json()
     
     // 搜索匹配（代码或名称）

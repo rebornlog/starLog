@@ -152,4 +152,18 @@ funds = [
         'riskLevel': '高',
         'tags': ['美股', '科技', 'QDII']
     },
+    # 添加更多基金
+    {
+        'code': '000041',
+        'name': '华夏大盘精选混合',
+        'type': '混合型',
+        'company': '华夏基金',
+        'manager': '未知',
+        'netValue': 1.5,
+        'change': 0.01,
+        'changePercent': 0.67,
+        'scale': 100,
+        'riskLevel': '中',
+        'tags': ['大盘', '精选']
+    },
 ]

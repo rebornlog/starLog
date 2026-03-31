@@ -5,6 +5,17 @@ import { useWatchlist } from '@/hooks/useWatchlist'
 import { Fund } from '@/types/fund'
 import { useState, useEffect } from 'react'
 
+
+export const metadata = {
+  title: 'Watchlist | starLog',
+  description: 'Watchlist 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 // 使用 Next.js 代理（自动转发到 8081 端口）
 const API_BASE = ''
 

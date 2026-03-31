@@ -8,6 +8,17 @@ import Breadcrumb from '@/components/Breadcrumb'
 import PopularPosts from '@/components/PopularPosts'
 import { TechIcon, FinanceIcon, FengshuiIcon, BusinessIcon } from '@/components/icons'
 
+
+export const metadata = {
+  title: '博客 - 技术文章 | starLog',
+  description: '博客 - 技术文章 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 interface Post {
   id: string
   slug: string

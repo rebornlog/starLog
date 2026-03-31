@@ -4,6 +4,17 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { FundImportData } from '@/types/fund'
 
+
+export const metadata = {
+  title: 'Import | starLog',
+  description: 'Import 页面 - starLog 个人知识库',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
 export default function FundImportPage() {
   const [inputText, setInputText] = useState('')
   const [importResult, setImportResult] = useState<{success: number, failed: number, details: any[]} | null>(null)

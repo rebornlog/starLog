@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>问卦测试</title>
+</head>
+<body>
+  <h1>问卦功能测试</h1>
+  <button onclick="testRandom()">随机起卦</button>
+  <button onclick="testTime()">时间起卦</button>
+  <button onclick="testNumber()">数字起卦</button>
+  <pre id="result"></pre>
+  
+  <script type="module">
+    // 导入起卦函数
+    import { castHexagram, interpretHexagram } from '/_next/static/chunks/app/iching/page-*.js';
+    
+    window.testRandom = () => {
+      try {
+        const result = castHexagram('random');
+        document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        document.getElementById('result').textContent = '❌ 错误：' + error.message + '\n' + error.stack;
+      }
+    };
+    
+    window.testTime = () => {
+      try {
+        const result = castHexagram('time');
+        document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        document.getElementById('result').textContent = '❌ 错误：' + error.message + '\n' + error.stack;
+      }
+    };
+    
+    window.testNumber = () => {
+      try {
+        const result = castHexagram('number', [1, 2, 3]);
+        document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        document.getElementById('result').textContent = '❌ 错误：' + error.message + '\n' + error.stack;
+      }
+    };
+  </script>
+</body>
+</html>
