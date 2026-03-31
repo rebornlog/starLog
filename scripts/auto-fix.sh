@@ -174,9 +174,134 @@ compress_assets() {
     fi
 }
 
+# 验证修复 - 关键！
+verify_fix() {
+    log_step "【验证阶段】测试修复是否成功..."
+    
+    local test_passed=true
+    local verify_log="/tmp/auto-fix-verify.log"
+    
+    # 1. 检查服务状态
+    log "  检查服务状态..."
+    if ! curl -s http://localhost:3000 > /dev/null; then
+        log_error "  ❌ 前端服务无响应！"
+        test_passed=false
+    else
+        log_success "  ✅ 前端服务正常"
+    fi
+    
+    # 2. 检查关键页面
+    log "  检查关键页面..."
+    local pages=("/" "/funds" "/stocks" "/blog")
+    for page in "${pages[@]}"; do
+        local http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000$page" --connect-timeout 5)
+        if [ "$http_code" = "200" ] || [ "$http_code" = "308" ]; then
+            log_success "    ✅ $page (HTTP $http_code)"
+        else
+            log_error "    ❌ $page (HTTP $http_code)"
+            test_passed=false
+        fi
+    done
+    
+    # 3. 检查 API
+    log "  检查 API 服务..."
+    if curl -s http://localhost:8081/health | grep -q "healthy"; then
+        log_success "  ✅ API 服务正常"
+    else
+        log_error "  ❌ API 服务异常！"
+        test_passed=false
+    fi
+    
+    # 4. 快速 Playwright 测试（1 分钟）
+    log "  执行快速浏览器测试..."
+    if [ -x "$WORKSPACE_DIR/node_modules/.bin/playwright" ]; then
+        local pw_test="$WORKSPACE_DIR/.verify-test.js"
+        cat > "$pw_test" << 'PWTEST'
+const { chromium } = require('playwright');
+(async () => {
+    try {
+        const browser = await chromium.launch({ headless: true });
+        const page = await browser.newPage();
+        await page.goto('http://localhost:3000', { waitUntil: 'networkidle', timeout: 30000 });
+        
+        // 检查页面是否正常渲染
+        const hasContent = await page.$('main');
+        const hasError = await page.$('.error, [role="alert"]');
+        
+        // 检查关键按钮
+        const buttons = await page.$$('button');
+        
+        await browser.close();
+        
+        if (hasContent && !hasError && buttons.length > 0) {
+            console.log(JSON.stringify({ success: true, buttons: buttons.length }));
+        } else {
+            console.log(JSON.stringify({ success: false, error: 'Page render issue' }));
+            process.exit(1);
+        }
+    } catch (e) {
+        console.log(JSON.stringify({ success: false, error: e.message }));
+        process.exit(1);
+    }
+})();
+PWTEST
+        
+        if node "$pw_test" > "$verify_log" 2>&1; then
+            log_success "  ✅ 浏览器测试通过"
+            rm -f "$pw_test"
+        else
+            log_error "  ❌ 浏览器测试失败！"
+            cat "$verify_log"
+            rm -f "$pw_test"
+            test_passed=false
+        fi
+    else
+        log_warning "  ⚠️  Playwright 不可用，跳过浏览器测试"
+    fi
+    
+    # 验证结果
+    if [ "$test_passed" = true ]; then
+        log_success "✅ 所有验证通过！修复成功"
+        return 0
+    else
+        log_error "❌ 验证失败！需要回滚"
+        return 1
+    fi
+}
+
+# 回滚修复
+rollback_fix() {
+    log_step "【回滚阶段】验证失败，回滚更改..."
+    
+    cd "$WORKSPACE_DIR"
+    
+    # Git 回滚
+    if git status --porcelain | grep -q "."; then
+        git checkout -- app/ components/ lib/ 2>/dev/null && {
+            log_success "✅ 已回滚代码更改"
+        } || log_warning "⚠️  回滚失败"
+    fi
+    
+    # 重启服务
+    log "  重启服务..."
+    pm2 restart starlog-frontend >/dev/null 2>&1 && {
+        log_success "✅ 服务已重启"
+    } || log_error "❌ 服务重启失败"
+    
+    # 记录错误
+    log_error "🚨 自动修复失败，已回滚" >> /home/admin/.openclaw/workspace/ERROR_LOG.md
+}
+
 # 提交到 GitHub
 commit_and_push() {
-    log_step "提交到 GitHub..."
+    log_step "【验证通过后提交】..."
+    
+    # 先验证！
+    if ! verify_fix; then
+        rollback_fix
+        log_error "❌ 验证失败，已回滚，不提交"
+        return 1
+    fi
     
     cd "$WORKSPACE_DIR"
     
@@ -309,7 +434,7 @@ main() {
     compress_assets || true
     echo ""
     
-    # 7. 提交到 GitHub
+    # 7. 提交到 GitHub（包含验证）
     commit_and_push || true
     echo ""
     

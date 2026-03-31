@@ -1,0 +1,1 @@
+{"version":3,"file":"AutoTestTool.d.ts","sourceRoot":"","sources":["../../src/tools/AutoTestTool.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,OAAO,EAAE,IAAI,EAAE,UAAU,EAAE,MAAM,QAAQ,CAAC;AAE1C,qBAAa,YAAa,YAAW,IAAI;IACvC,IAAI,SAAc;IAClB,WAAW,SAAqB;IAChC,OAAO,SAAW;IAEZ,OAAO,IAAI,OAAO,CAAC,UAAU,CAAC;IA0CpC,aAAa;YACC,YAAY;IAK1B,gBAAgB;YACF,OAAO;IAKrB,WAAW;YACG,eAAe;CAO9B"}

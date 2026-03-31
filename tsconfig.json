@@ -1,49 +1,24 @@
 {
   "compilerOptions": {
-    "incremental": true,
-    "target": "ES6",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "composite": true,
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "baseUrl": ".",
-    "paths": {
-      "@/components/*": ["components/*"],
-      "@/data/*": ["data/*"],
-      "@/hooks/*": ["hooks/*"],
-      "@/layouts/*": ["layouts/*"],
-      "@/css/*": ["css/*"],
-      "@/lib/*": ["lib/*"],
-      "contentlayer/generated": ["./.contentlayer/generated"],
-      "pliny/*": ["node_modules/pliny/*"]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "strictNullChecks": true
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.js",
-    "**/*.mjs",
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.json",
-    ".contentlayer/generated",
-    ".contentlayer/generated/**/*.json",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -52,13 +52,19 @@ FAILED_TESTS=0
 FIXED_ISSUES=0
 NEW_ISSUES=0
 
-# 页面列表（自动扫描 + 手动补充）
+# 页面列表（优化版 - 包含动态路由示例）
 declare -a PAGES=(
+    # 核心页面
     "/"
     "/about"
     "/blog"
     "/diet"
     "/favorites"
+    "/timeline"
+    "/novel"
+    "/projects"
+    
+    # 金融板块
     "/funds"
     "/funds/alerts"
     "/funds/compare"
@@ -66,20 +72,45 @@ declare -a PAGES=(
     "/funds/import"
     "/funds/sip-calculator"
     "/funds/watchlist"
+    "/funds/000001"  # 动态路由示例 - 华夏成长混合
+    "/funds/000002"  # 动态路由示例 - 南方稳健成长
+    
+    # 股票板块
+    "/stocks"
+    "/stocks/600519"  # 动态路由示例 - 贵州茅台
+    "/stocks/000858"  # 动态路由示例 - 五粮液
+    
+    # 星座板块
+    "/zodiac"
+    "/zodiac/aries"     # 白羊座
+    "/zodiac/taurus"    # 金牛座
+    "/zodiac/gemini"    # 双子座
+    
+    # 易经板块
     "/iching"
     "/iching/history"
-    "/novel"
-    "/projects"
-    "/stocks"
-    "/timeline"
-    "/zodiac"
+    
+    # 标签页面
+    "/tags"
 )
 
-# API 端点列表
+# API 端点列表（优化版 - 增加覆盖）
 declare -a API_ENDPOINTS=(
+    # 健康检查
     "/health"
+    
+    # 基金 API
     "/api/funds/list"
+    "/api/funds/000001"
+    "/api/funds/batch?codes=000001,000002,110022"
+    
+    # 股票 API
     "/api/stocks/list"
+    "/api/stocks/600519"
+    
+    # 其他 API
+    "/api/horoscope/today"
+    "/api/iching/divine"
 )
 
 # 测试函数：检查页面加载
@@ -630,11 +661,20 @@ main() {
     log_step "【阶段 4/4】自动修复"
     auto_fix_issues
     
-    # 5. 性能与内容优化
+    # 5. 性能与内容优化 + Lighthouse 测试
     if [ "$mode" = "full" ]; then
         run_optimization
         # 6. 自动修复（仅 full 模式）
         run_auto_fix
+        # 7. Lighthouse 性能测试（新增）
+        log_step "【阶段 7/7】Lighthouse 性能测试"
+        if [ -x "$SCRIPT_DIR/lighthouse-test.sh" ]; then
+            bash "$SCRIPT_DIR/lighthouse-test.sh" 2>&1 | while read line; do
+                log_info "  $line"
+            done || true
+        else
+            log_warning "Lighthouse 脚本不存在，跳过"
+        fi
     fi
     
     # 生成报告

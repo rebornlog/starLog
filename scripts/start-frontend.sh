@@ -1,5 +1,5 @@
 #!/bin/bash
-# Frontend startup wrapper - aggressive port cleanup
+# Frontend startup wrapper - fixed version (no lsof dependency)
 
 cd /home/admin/.openclaw/workspace/starLog
 
@@ -11,24 +11,19 @@ pkill -9 -f "next-server" 2>/dev/null || true
 pkill -9 -f "next.*start" 2>/dev/null || true
 
 # Wait for processes to die
-sleep 3
+sleep 2
 
-# Clean port 3000 using fuser
+# Clean port 3000 using fuser (if available)
 if command -v fuser &> /dev/null; then
     fuser -k -9 3000/tcp 2>/dev/null || true
+    sleep 1
 fi
 
-# Clean port 3000 using lsof
-PIDS=$(lsof -t -i:3000 2>/dev/null || true)
-if [ -n "$PIDS" ]; then
-    echo "⚠️  Killing: $PIDS"
-    echo "$PIDS" | xargs kill -9 2>/dev/null || true
-fi
-
-# Wait and verify port is free (up to 10 seconds)
+# Wait and verify port is free using netstat (up to 10 seconds)
 echo "⏳ Verifying port is free..."
 for i in {1..10}; do
-    if ! lsof -i:3000 &>/dev/null; then
+    # Check if port 3000 is in LISTEN state
+    if ! netstat -tlnp 2>/dev/null | grep -q ":3000 "; then
         echo "✅ Port 3000 free after ${i}s"
         break
     fi
@@ -36,12 +31,13 @@ for i in {1..10}; do
     sleep 1
 done
 
-# Final check
-if lsof -i:3000 &>/dev/null; then
+# Final check using netstat
+if netstat -tlnp 2>/dev/null | grep -q ":3000 "; then
     echo "❌ Port 3000 still occupied!"
-    lsof -i:3000
+    netstat -tlnp 2>/dev/null | grep 3000
     exit 1
 fi
 
 echo "✅ Starting Next.js..."
-exec npm start
+# Use npm start without exec so PM2 can manage the process
+npm start
