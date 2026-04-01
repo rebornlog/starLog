@@ -60,6 +60,38 @@ async def get_funds(
     }
 
 
+@router.post("/batch")
+@router.get("/batch")
+async def get_funds_batch(codes: List[str] = Query(default=None)) -> Dict[str, Any]:
+    """
+    批量获取基金净值（支持 GET 和 POST）
+    GET: /api/funds/batch?codes=000001,000002,110022
+    POST: /api/funds/batch {"codes": ["000001", "000002"]}
+    """
+    if not codes:
+        raise HTTPException(status_code=400, detail="基金代码不能为空")
+    
+    # 如果是字符串，拆分为列表
+    if isinstance(codes, str):
+        codes = [c.strip() for c in codes.split(',')]
+    
+    if len(codes) > 50:
+        raise HTTPException(status_code=400, detail="基金代码数量必须在 1-50 之间")
+    
+    try:
+        results = await asyncio.get_event_loop().run_in_executor(
+            None, get_funds_batch_sync, codes
+        )
+        
+        return {
+            "success": True,
+            "count": len(results),
+            "data": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"批量获取失败：{str(e)}")
+
+
 @router.get("/{code}")
 async def get_fund_detail(code: str) -> Dict[str, Any]:
     """
@@ -145,11 +177,21 @@ async def get_fund_history(
 
 
 @router.post("/batch")
-async def get_funds_batch(codes: List[str]) -> Dict[str, Any]:
+@router.get("/batch")
+async def get_funds_batch(codes: List[str] = Query(default=None)) -> Dict[str, Any]:
     """
-    批量获取基金净值
+    批量获取基金净值（支持 GET 和 POST）
+    GET: /api/funds/batch?codes=000001,000002,110022
+    POST: /api/funds/batch {"codes": ["000001", "000002"]}
     """
-    if not codes or len(codes) > 50:
+    if not codes:
+        raise HTTPException(status_code=400, detail="基金代码不能为空")
+    
+    # 如果是字符串，拆分为列表
+    if isinstance(codes, str):
+        codes = [c.strip() for c in codes.split(',')]
+    
+    if len(codes) > 50:
         raise HTTPException(status_code=400, detail="基金代码数量必须在 1-50 之间")
     
     try:
