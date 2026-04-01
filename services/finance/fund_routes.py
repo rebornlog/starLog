@@ -62,26 +62,30 @@ async def get_funds(
 
 @router.post("/batch")
 @router.get("/batch")
-async def get_funds_batch(codes: List[str] = Query(default=None)) -> Dict[str, Any]:
+async def get_funds_batch(codes: str = Query(default="", description="基金代码，逗号分隔，如：000001,000002")) -> Dict[str, Any]:
     """
     批量获取基金净值（支持 GET 和 POST）
     GET: /api/funds/batch?codes=000001,000002,110022
     POST: /api/funds/batch {"codes": ["000001", "000002"]}
     """
+    print(f"DEBUG batch: codes={codes}, type={type(codes)}")
+    
     if not codes:
         raise HTTPException(status_code=400, detail="基金代码不能为空")
     
-    # 如果是字符串，拆分为列表
-    if isinstance(codes, str):
-        codes = [c.strip() for c in codes.split(',')]
+    # 拆分逗号分隔的字符串
+    codes_list = [c.strip() for c in codes.split(',')]
+    print(f"DEBUG batch: 拆分后 codes_list={codes_list}")
     
-    if len(codes) > 50:
+    if len(codes_list) > 50:
         raise HTTPException(status_code=400, detail="基金代码数量必须在 1-50 之间")
     
     try:
+        print(f"DEBUG batch: 调用 get_funds_batch_sync, codes={codes_list}")
         results = await asyncio.get_event_loop().run_in_executor(
-            None, get_funds_batch_sync, codes
+            None, get_funds_batch_sync, codes_list
         )
+        print(f"DEBUG batch: 结果数量={len(results)}")
         
         return {
             "success": True,
@@ -174,38 +178,6 @@ async def get_fund_history(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取历史数据失败：{str(e)}")
-
-
-@router.post("/batch")
-@router.get("/batch")
-async def get_funds_batch(codes: List[str] = Query(default=None)) -> Dict[str, Any]:
-    """
-    批量获取基金净值（支持 GET 和 POST）
-    GET: /api/funds/batch?codes=000001,000002,110022
-    POST: /api/funds/batch {"codes": ["000001", "000002"]}
-    """
-    if not codes:
-        raise HTTPException(status_code=400, detail="基金代码不能为空")
-    
-    # 如果是字符串，拆分为列表
-    if isinstance(codes, str):
-        codes = [c.strip() for c in codes.split(',')]
-    
-    if len(codes) > 50:
-        raise HTTPException(status_code=400, detail="基金代码数量必须在 1-50 之间")
-    
-    try:
-        results = await asyncio.get_event_loop().run_in_executor(
-            None, get_funds_batch_sync, codes
-        )
-        
-        return {
-            "success": True,
-            "count": len(results),
-            "data": results
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"批量获取失败：{str(e)}")
 
 
 @router.get("/{code}/refresh")

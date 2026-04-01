@@ -107,10 +107,6 @@ declare -a API_ENDPOINTS=(
     # 股票 API
     "/api/stocks/list"
     "/api/stocks/600519"
-    
-    # 其他 API
-    "/api/horoscope/today"
-    "/api/iching/divine"
 )
 
 # 测试函数：检查页面加载
