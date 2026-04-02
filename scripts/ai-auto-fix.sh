@@ -34,7 +34,7 @@ check_playwright() {
 
 # ==================== 检测 SEO 问题（使用无头浏览器） ====================
 check_seo_issues() {
-    log "🔍 检测 SEO 问题..."
+    log "🔍 检测 SEO 问题（页面准确性基准）..."
     
     # 检查是否可以使用无头浏览器
     local use_headless=false
@@ -223,6 +223,128 @@ PLAYWRIGHT_SEO
     
     # 返回问题列表
     printf '%s\n' "${issues[@]}"
+}
+
+# ==================== 验证 API 接口的页面表现（原则性问题） ====================
+check_api_via_pages() {
+    log "🔍 验证 API 接口的页面表现（原则性问题）..."
+    
+    if ! check_playwright; then
+        log "⚠️  Playwright 不可用，跳过 API 页面验证"
+        return 0
+    fi
+    
+    local api_issues=()
+    
+    # 测试页面及其对应的 API
+    local test_cases=(
+        "/funds:/api/funds/list"
+        "/stocks:/api/stocks/list"
+    )
+    
+    for test_case in "${test_cases[@]}"; do
+        local page=$(echo "$test_case" | cut -d: -f1)
+        local api=$(echo "$test_case" | cut -d: -f2)
+        local url="http://localhost:3000$page"
+        
+        log "  验证：$page (依赖 $api)"
+        
+        # 创建临时测试脚本
+        local temp_script="$WORKSPACE_DIR/.api-check-$$.js"
+        cat > "$temp_script" << 'PLAYWRIGHT_API_CHECK'
+const { chromium } = require('playwright');
+
+(async () => {
+    const browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    
+    try {
+        await page.goto(process.argv[2], { waitUntil: 'networkidle', timeout: 15000 });
+        await page.waitForTimeout(3000);
+        
+        const checks = {
+            url: process.argv[2],
+            pageLoaded: false,
+            hasData: false,
+            apiErrors: [],
+            consoleErrors: [],
+            hasErrorUI: false
+        };
+        
+        // 检查页面是否加载
+        checks.pageLoaded = await page.$('main') !== null || await page.$('#__next') !== null;
+        
+        // 检查是否有数据展示（基金卡片、股票卡片等）
+        const dataElements = await page.$$('.fund-card, .stock-card, .data-table, [data-testid="list-item"]');
+        checks.hasData = dataElements.length > 0;
+        
+        // 检查是否有错误 UI
+        checks.hasErrorUI = await page.$('.error, [role="alert"], .toast-error') !== null;
+        
+        // 监听 API 错误
+        page.on('response', response => {
+            const url = response.url();
+            const status = response.status();
+            if (url.includes('/api/') && status >= 400) {
+                checks.apiErrors.push(`${url} - ${status}`);
+            }
+        });
+        
+        // 监听 Console 错误
+        page.on('console', msg => {
+            if (msg.type() === 'error') {
+                checks.consoleErrors.push(msg.text());
+            }
+        });
+        
+        console.log(JSON.stringify(checks));
+        
+    } catch (error) {
+        console.error(JSON.stringify({ error: error.message, url: process.argv[2] }));
+        process.exit(1);
+    } finally {
+        await browser.close();
+    }
+})();
+PLAYWRIGHT_API_CHECK
+        
+        # 执行检测
+        local result=$(cd "$WORKSPACE_DIR" && node "$temp_script" "$url" 2>&1)
+        rm -f "$temp_script"
+        
+        # 解析结果
+        local json_line=$(echo "$result" | tail -10 | grep -E '^\{.*\}$' | head -1)
+        
+        if [ -n "$json_line" ]; then
+            local has_data=$(echo "$json_line" | grep -o '"hasData":true' | wc -l)
+            local has_error_ui=$(echo "$json_line" | grep -o '"hasErrorUI":true' | wc -l)
+            local api_errors=$(echo "$json_line" | grep -o '"apiErrors":\[\]' | wc -l)
+            
+            if [ "$has_data" -eq 0 ]; then
+                api_issues+=("$page:页面无数据展示")
+                log "  ❌ $page: 页面无数据展示"
+            fi
+            
+            if [ "$has_error_ui" -gt 0 ]; then
+                api_issues+=("$page:页面显示错误提示")
+                log "  ❌ $page: 页面显示错误提示"
+            fi
+            
+            if [ "$api_errors" -eq 0 ]; then
+                api_issues+=("$page:API 请求失败")
+                log "  ❌ $page: API 请求失败"
+            fi
+            
+            if [ "$has_data" -gt 0 ] && [ "$has_error_ui" -eq 0 ] && [ "$api_errors" -gt 0 ]; then
+                log "  ✅ $page: 数据正常，API 无错误"
+            fi
+        else
+            log "  ⚠️  $page: 检测失败"
+        fi
+    done
+    
+    # 返回问题列表
+    printf '%s\n' "${api_issues[@]}"
 }
 
 # ==================== 生成 AI 修复任务 ====================
@@ -491,16 +613,32 @@ main() {
     log "🚀 AI 驱动的自动优化"
     log "=========================================="
     
-    # 步骤 1: 检测问题
-    local issues=$(check_seo_issues)
+    # 步骤 1: 检测 SEO 问题（页面准确性基准）
+    local seo_issues=$(check_seo_issues)
     
-    if [ -z "$issues" ]; then
+    # 步骤 2: 验证 API 接口的页面表现（原则性问题）
+    local api_issues=$(check_api_via_pages)
+    
+    # 合并问题
+    local all_issues=""
+    if [ -n "$seo_issues" ]; then
+        all_issues="$seo_issues"
+    fi
+    if [ -n "$api_issues" ]; then
+        if [ -n "$all_issues" ]; then
+            all_issues="$all_issues\n$api_issues"
+        else
+            all_issues="$api_issues"
+        fi
+    fi
+    
+    if [ -z "$all_issues" ]; then
         log "✅ 未发现问题，无需优化"
         exit 0
     fi
     
-    # 步骤 2: 生成 AI 任务
-    local task_file=$(generate_ai_task "$issues")
+    # 步骤 3: 生成 AI 任务
+    local task_file=$(generate_ai_task "$all_issues")
     
     # 步骤 3: 调用 AI（模拟）
     local ai_response=$(call_ai_for_fix "$task_file")

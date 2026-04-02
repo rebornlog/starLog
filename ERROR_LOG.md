@@ -5337,3 +5337,1158 @@ Call log:
 **状态：** 待修复
 **自动修复：** 待执行
 
+
+### ❌ 问题：clickable_errors @ /
+**时间：** 2026-04-02 17:00:44
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /about
+**时间：** 2026-04-02 17:01:11
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /blog
+**时间：** 2026-04-02 17:01:38
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /diet
+**时间：** 2026-04-02 17:02:05
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /favorites
+**时间：** 2026-04-02 17:02:32
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /timeline
+**时间：** 2026-04-02 17:03:00
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /novel
+**时间：** 2026-04-02 17:03:28
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /projects
+**时间：** 2026-04-02 17:03:55
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds
+**时间：** 2026-04-02 17:04:06
+**描述：** page.goto: Timeout 10000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/funds", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds
+**时间：** 2026-04-02 17:04:37
+**描述：** page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/funds", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/alerts
+**时间：** 2026-04-02 17:05:04
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/compare
+**时间：** 2026-04-02 17:05:31
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/export
+**时间：** 2026-04-02 17:05:59
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/import
+**时间：** 2026-04-02 17:06:25
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/sip-calculator
+**时间：** 2026-04-02 17:06:53
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/watchlist
+**时间：** 2026-04-02 17:07:19
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/000001
+**时间：** 2026-04-02 17:07:47
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /funds/000002
+**时间：** 2026-04-02 17:08:13
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /stocks
+**时间：** 2026-04-02 17:08:41
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /stocks/600519
+**时间：** 2026-04-02 17:08:52
+**描述：** page.goto: Timeout 10000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/stocks/600519", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /stocks/600519
+**时间：** 2026-04-02 17:09:23
+**描述：** page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/stocks/600519", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /stocks/000858
+**时间：** 2026-04-02 17:09:34
+**描述：** page.goto: Timeout 10000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/stocks/000858", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /stocks/000858
+**时间：** 2026-04-02 17:10:05
+**描述：** page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/stocks/000858", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /zodiac
+**时间：** 2026-04-02 17:10:33
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /zodiac/aries
+**时间：** 2026-04-02 17:11:01
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /zodiac/taurus
+**时间：** 2026-04-02 17:11:30
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /zodiac/gemini
+**时间：** 2026-04-02 17:11:59
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /iching
+**时间：** 2026-04-02 17:12:25
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /iching/history
+**时间：** 2026-04-02 17:12:52
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：clickable_errors @ /tags
+**时间：** 2026-04-02 17:13:18
+**描述：** 8 个元素报错
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /
+**时间：** 2026-04-02 17:45:03
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /about
+**时间：** 2026-04-02 17:45:04
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /blog
+**时间：** 2026-04-02 17:45:05
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /diet
+**时间：** 2026-04-02 17:45:05
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /favorites
+**时间：** 2026-04-02 17:45:06
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /timeline
+**时间：** 2026-04-02 17:45:06
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /novel
+**时间：** 2026-04-02 17:45:07
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /projects
+**时间：** 2026-04-02 17:45:07
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds
+**时间：** 2026-04-02 17:45:08
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/alerts
+**时间：** 2026-04-02 17:45:08
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/compare
+**时间：** 2026-04-02 17:45:09
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/export
+**时间：** 2026-04-02 17:45:10
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/import
+**时间：** 2026-04-02 17:45:10
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/sip-calculator
+**时间：** 2026-04-02 17:45:11
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/watchlist
+**时间：** 2026-04-02 17:45:12
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/000001
+**时间：** 2026-04-02 17:45:14
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/000002
+**时间：** 2026-04-02 17:45:15
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /stocks
+**时间：** 2026-04-02 17:45:16
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /stocks/600519
+**时间：** 2026-04-02 17:45:18
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /stocks/000858
+**时间：** 2026-04-02 17:45:20
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac
+**时间：** 2026-04-02 17:45:21
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac/aries
+**时间：** 2026-04-02 17:45:23
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac/taurus
+**时间：** 2026-04-02 17:45:25
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac/gemini
+**时间：** 2026-04-02 17:45:26
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /iching
+**时间：** 2026-04-02 17:45:28
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /iching/history
+**时间：** 2026-04-02 17:45:29
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /tags
+**时间：** 2026-04-02 17:45:31
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /
+**时间：** 2026-04-02 17:45:59
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/
+Call log:
+  - navigating to "http://localhost:3000/", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /
+**时间：** 2026-04-02 17:46:11
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/
+Call log:
+  - navigating to "http://localhost:3000/", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /about
+**时间：** 2026-04-02 17:46:23
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/about
+Call log:
+  - navigating to "http://localhost:3000/about", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /about
+**时间：** 2026-04-02 17:46:34
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/about
+Call log:
+  - navigating to "http://localhost:3000/about", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /blog
+**时间：** 2026-04-02 17:46:49
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/blog
+Call log:
+  - navigating to "http://localhost:3000/blog", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /blog
+**时间：** 2026-04-02 17:46:55
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/blog
+Call log:
+  - navigating to "http://localhost:3000/blog", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /diet
+**时间：** 2026-04-02 17:47:00
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/diet
+Call log:
+  - navigating to "http://localhost:3000/diet", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /diet
+**时间：** 2026-04-02 17:47:06
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/diet
+Call log:
+  - navigating to "http://localhost:3000/diet", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /favorites
+**时间：** 2026-04-02 17:47:13
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/favorites
+Call log:
+  - navigating to "http://localhost:3000/favorites", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /favorites
+**时间：** 2026-04-02 17:47:22
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/favorites
+Call log:
+  - navigating to "http://localhost:3000/favorites", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /timeline
+**时间：** 2026-04-02 17:47:34
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/timeline
+Call log:
+  - navigating to "http://localhost:3000/timeline", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /timeline
+**时间：** 2026-04-02 17:47:40
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/timeline
+Call log:
+  - navigating to "http://localhost:3000/timeline", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /novel
+**时间：** 2026-04-02 17:47:49
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/novel
+Call log:
+  - navigating to "http://localhost:3000/novel", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /novel
+**时间：** 2026-04-02 17:47:54
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/novel
+Call log:
+  - navigating to "http://localhost:3000/novel", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /projects
+**时间：** 2026-04-02 17:47:58
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/projects
+Call log:
+  - navigating to "http://localhost:3000/projects", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /projects
+**时间：** 2026-04-02 17:48:04
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/projects
+Call log:
+  - navigating to "http://localhost:3000/projects", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds
+**时间：** 2026-04-02 17:48:14
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds
+Call log:
+  - navigating to "http://localhost:3000/funds", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds
+**时间：** 2026-04-02 17:48:24
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds
+Call log:
+  - navigating to "http://localhost:3000/funds", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/alerts
+**时间：** 2026-04-02 17:48:37
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/alerts
+Call log:
+  - navigating to "http://localhost:3000/funds/alerts", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/alerts
+**时间：** 2026-04-02 17:48:45
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/alerts
+Call log:
+  - navigating to "http://localhost:3000/funds/alerts", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/compare
+**时间：** 2026-04-02 17:48:50
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/compare
+Call log:
+  - navigating to "http://localhost:3000/funds/compare", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/compare
+**时间：** 2026-04-02 17:48:54
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/compare
+Call log:
+  - navigating to "http://localhost:3000/funds/compare", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/export
+**时间：** 2026-04-02 17:48:59
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/export
+Call log:
+  - navigating to "http://localhost:3000/funds/export", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/export
+**时间：** 2026-04-02 17:49:04
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/export
+Call log:
+  - navigating to "http://localhost:3000/funds/export", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/import
+**时间：** 2026-04-02 17:49:16
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/import
+Call log:
+  - navigating to "http://localhost:3000/funds/import", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/import
+**时间：** 2026-04-02 17:49:28
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/import
+Call log:
+  - navigating to "http://localhost:3000/funds/import", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/sip-calculator
+**时间：** 2026-04-02 17:49:39
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/sip-calculator
+Call log:
+  - navigating to "http://localhost:3000/funds/sip-calculator", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/sip-calculator
+**时间：** 2026-04-02 17:49:49
+**描述：** page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/funds/sip-calculator
+Call log:
+  - navigating to "http://localhost:3000/funds/sip-calculator", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/watchlist
+**时间：** 2026-04-02 17:49:59
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/watchlist
+Call log:
+  - navigating to "http://localhost:3000/funds/watchlist", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/watchlist
+**时间：** 2026-04-02 17:50:11
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/watchlist
+Call log:
+  - navigating to "http://localhost:3000/funds/watchlist", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/000001
+**时间：** 2026-04-02 17:50:28
+**描述：** page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/funds/000001
+Call log:
+  - navigating to "http://localhost:3000/funds/000001", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/000001
+**时间：** 2026-04-02 17:50:37
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/000001
+Call log:
+  - navigating to "http://localhost:3000/funds/000001", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /funds/000002
+**时间：** 2026-04-02 17:50:46
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/000002
+Call log:
+  - navigating to "http://localhost:3000/funds/000002", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /funds/000002
+**时间：** 2026-04-02 17:50:56
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/funds/000002
+Call log:
+  - navigating to "http://localhost:3000/funds/000002", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /stocks
+**时间：** 2026-04-02 17:51:05
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/stocks
+Call log:
+  - navigating to "http://localhost:3000/stocks", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /stocks
+**时间：** 2026-04-02 17:51:27
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/stocks
+Call log:
+  - navigating to "http://localhost:3000/stocks", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /stocks/600519
+**时间：** 2026-04-02 17:51:39
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/stocks/600519
+Call log:
+  - navigating to "http://localhost:3000/stocks/600519", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /stocks/600519
+**时间：** 2026-04-02 17:51:49
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/stocks/600519
+Call log:
+  - navigating to "http://localhost:3000/stocks/600519", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /stocks/000858
+**时间：** 2026-04-02 17:51:58
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/stocks/000858
+Call log:
+  - navigating to "http://localhost:3000/stocks/000858", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /stocks/000858
+**时间：** 2026-04-02 17:52:07
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/stocks/000858
+Call log:
+  - navigating to "http://localhost:3000/stocks/000858", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /zodiac
+**时间：** 2026-04-02 17:52:26
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac
+Call log:
+  - navigating to "http://localhost:3000/zodiac", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /zodiac
+**时间：** 2026-04-02 17:52:40
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac
+Call log:
+  - navigating to "http://localhost:3000/zodiac", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /zodiac/aries
+**时间：** 2026-04-02 17:52:54
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac/aries
+Call log:
+  - navigating to "http://localhost:3000/zodiac/aries", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /zodiac/aries
+**时间：** 2026-04-02 17:53:06
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac/aries
+Call log:
+  - navigating to "http://localhost:3000/zodiac/aries", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /zodiac/taurus
+**时间：** 2026-04-02 17:53:21
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac/taurus
+Call log:
+  - navigating to "http://localhost:3000/zodiac/taurus", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /zodiac/taurus
+**时间：** 2026-04-02 17:53:42
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac/taurus
+Call log:
+  - navigating to "http://localhost:3000/zodiac/taurus", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /zodiac/gemini
+**时间：** 2026-04-02 17:53:56
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac/gemini
+Call log:
+  - navigating to "http://localhost:3000/zodiac/gemini", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /zodiac/gemini
+**时间：** 2026-04-02 17:54:12
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/zodiac/gemini
+Call log:
+  - navigating to "http://localhost:3000/zodiac/gemini", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /iching
+**时间：** 2026-04-02 17:54:32
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/iching
+Call log:
+  - navigating to "http://localhost:3000/iching", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /iching
+**时间：** 2026-04-02 17:54:56
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/iching
+Call log:
+  - navigating to "http://localhost:3000/iching", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /iching/history
+**时间：** 2026-04-02 17:55:15
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/iching/history
+Call log:
+  - navigating to "http://localhost:3000/iching/history", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /iching/history
+**时间：** 2026-04-02 17:55:38
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/iching/history
+Call log:
+  - navigating to "http://localhost:3000/iching/history", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /tags
+**时间：** 2026-04-02 17:56:11
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/tags
+Call log:
+  - navigating to "http://localhost:3000/tags", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /tags
+**时间：** 2026-04-02 17:56:31
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/tags
+Call log:
+  - navigating to "http://localhost:3000/tags", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /
+**时间：** 2026-04-02 18:00:04
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /about
+**时间：** 2026-04-02 18:00:06
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /blog
+**时间：** 2026-04-02 18:00:08
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /diet
+**时间：** 2026-04-02 18:00:09
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /favorites
+**时间：** 2026-04-02 18:00:10
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /timeline
+**时间：** 2026-04-02 18:00:11
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /novel
+**时间：** 2026-04-02 18:00:12
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /projects
+**时间：** 2026-04-02 18:00:13
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds
+**时间：** 2026-04-02 18:00:14
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/alerts
+**时间：** 2026-04-02 18:00:15
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/compare
+**时间：** 2026-04-02 18:00:16
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/export
+**时间：** 2026-04-02 18:00:17
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/import
+**时间：** 2026-04-02 18:00:18
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/sip-calculator
+**时间：** 2026-04-02 18:00:19
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/watchlist
+**时间：** 2026-04-02 18:00:20
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/000001
+**时间：** 2026-04-02 18:00:22
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /funds/000002
+**时间：** 2026-04-02 18:00:24
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /stocks
+**时间：** 2026-04-02 18:00:26
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /stocks/600519
+**时间：** 2026-04-02 18:00:28
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /stocks/000858
+**时间：** 2026-04-02 18:00:31
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac
+**时间：** 2026-04-02 18:00:35
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac/aries
+**时间：** 2026-04-02 18:00:37
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac/taurus
+**时间：** 2026-04-02 18:00:41
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /zodiac/gemini
+**时间：** 2026-04-02 18:00:44
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /iching
+**时间：** 2026-04-02 18:00:46
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /iching/history
+**时间：** 2026-04-02 18:00:49
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_load @ /tags
+**时间：** 2026-04-02 18:00:51
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：api_response @ /health
+**时间：** 2026-04-02 18:00:53
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：api_response @ /api/funds/list
+**时间：** 2026-04-02 18:00:55
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：api_response @ /api/funds/000001
+**时间：** 2026-04-02 18:00:56
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：api_response @ /api/funds/batch?codes=000001,000002,110022
+**时间：** 2026-04-02 18:00:58
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：api_response @ /api/stocks/list
+**时间：** 2026-04-02 18:01:00
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：api_response @ /api/stocks/600519
+**时间：** 2026-04-02 18:01:02
+**描述：** HTTP 000
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /
+**时间：** 2026-04-02 18:01:17
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/
+Call log:
+  - navigating to "http://localhost:3000/", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：buttons @ /
+**时间：** 2026-04-02 18:01:44
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/
+Call log:
+  - navigating to "http://localhost:3000/", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+
+
+### ❌ 问题：page_elements @ /about
+**时间：** 2026-04-02 18:01:59
+**描述：** page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/about
+Call log:
+  - navigating to "http://localhost:3000/about", waiting until "networkidle"
+**状态：** 待修复
+**自动修复：** 待执行
+

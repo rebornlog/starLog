@@ -11,12 +11,12 @@ pkill -9 -f "next-server" 2>/dev/null || true
 pkill -9 -f "next.*start" 2>/dev/null || true
 
 # Wait for processes to die
-sleep 2
+sleep 3
 
 # Clean port 3000 using fuser (if available)
 if command -v fuser &> /dev/null; then
     fuser -k -9 3000/tcp 2>/dev/null || true
-    sleep 1
+    sleep 2
 fi
 
 # Wait and verify port is free using netstat (up to 10 seconds)

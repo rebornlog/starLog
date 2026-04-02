@@ -1,16 +1,15 @@
 {
   "name": "starlog-evolution",
   "version": "1.0.0",
-  
   "description": "网站自我进化系统 - TypeScript 重构版",
   "main": "dist/commands/index.js",
   "bin": {
     "evolution": "./dist/commands/index.js"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "node dist/commands/index.js",
+    "build": "tsc && next build",
+    "dev": "next dev",
+    "start": "next start",
     "auto-test": "node dist/commands/index.js auto-test",
     "auto-fix": "node dist/commands/index.js auto-fix",
     "auto-optimize": "node dist/commands/index.js auto-optimize",
@@ -27,11 +26,19 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "playwright": "^1.59.1",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0",
-    "eslint": "^8.0.0"
+    "vitest": "^1.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@next/bundle-analyzer": "^16.2.2",
+    "next": "^16.2.2",
+    "next-contentlayer2": "^0.5.8",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   }
 }
