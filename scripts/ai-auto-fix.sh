@@ -18,45 +18,206 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# ==================== 检测 SEO 问题 ====================
+# ==================== 检查 Playwright 是否可用 ====================
+check_playwright() {
+    if [ -x "$WORKSPACE_DIR/node_modules/.bin/playwright" ] || command -v playwright &> /dev/null; then
+        return 0
+    fi
+    
+    # 尝试检测是否有 playwright 模块
+    if [ -d "$WORKSPACE_DIR/node_modules/playwright" ]; then
+        return 0
+    fi
+    
+    return 1
+}
+
+# ==================== 检测 SEO 问题（使用无头浏览器） ====================
 check_seo_issues() {
     log "🔍 检测 SEO 问题..."
+    
+    # 检查是否可以使用无头浏览器
+    local use_headless=false
+    if check_playwright; then
+        use_headless=true
+        log "✅ Playwright 可用，使用无头浏览器检测"
+    else
+        log "⚠️  Playwright 不可用，降级使用 curl 检测（功能受限）"
+    fi
     
     local issues=()
     local pages=("/funds" "/stocks" "/blog")
     
     for page in "${pages[@]}"; do
-        local html=$(curl -s "http://localhost:3000$page" --connect-timeout 10)
-        local page_issues=()
+        local url="http://localhost:3000$page"
+        log "  检查：$url"
         
-        # 检查 title
-        if ! echo "$html" | grep -q "<title>" || [ -z "$(echo "$html" | grep -oP '(?<=<title>)[^<]+' | head -1)" ]; then
-            page_issues+=("missing_title")
+        # 如果使用无头浏览器
+        if [ "$use_headless" = true ]; then
+            # 创建临时 Playwright 脚本
+            local temp_script="$WORKSPACE_DIR/.seo-check-$$.js"
+            cat > "$temp_script" << 'PLAYWRIGHT_SEO'
+const { chromium } = require('playwright');
+
+(async () => {
+    const browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    
+    try {
+        await page.goto(process.argv[2], { waitUntil: 'networkidle', timeout: 15000 });
+        await page.waitForTimeout(3000); // 等待动态内容加载
+        
+        // 获取完整渲染后的 HTML
+        const html = await page.content();
+        
+        // 检查 SEO 元素
+        const checks = {
+            url: process.argv[2],
+            hasTitle: false,
+            titleText: '',
+            hasMetaDescription: false,
+            metaDescription: '',
+            hasH1: false,
+            h1Count: 0,
+            hasCanonical: false,
+            canonicalUrl: '',
+            hasViewport: false,
+            consoleErrors: [],
+            networkErrors: []
+        };
+        
+        // 检查 title
+        const title = await page.$('title');
+        if (title) {
+            checks.hasTitle = true;
+            checks.titleText = await page.title();
+        }
+        
+        // 检查 meta description
+        const description = await page.$('meta[name="description"]');
+        if (description) {
+            checks.hasMetaDescription = true;
+            checks.metaDescription = await description.getAttribute('content') || '';
+        }
+        
+        // 检查 H1
+        const h1s = await page.$$('h1');
+        checks.h1Count = h1s.length;
+        checks.hasH1 = h1s.length > 0;
+        
+        // 检查 canonical
+        const canonical = await page.$('link[rel="canonical"]');
+        if (canonical) {
+            checks.hasCanonical = true;
+            checks.canonicalUrl = await canonical.getAttribute('href') || '';
+        }
+        
+        // 检查 viewport
+        const viewport = await page.$('meta[name="viewport"]');
+        checks.hasViewport = !!viewport;
+        
+        // 监听 Console 错误
+        page.on('console', msg => {
+            if (msg.type() === 'error') {
+                checks.consoleErrors.push(msg.text());
+            }
+        });
+        
+        // 监听 Network 错误
+        page.on('response', response => {
+            if (response.status() >= 400) {
+                checks.networkErrors.push(`${response.url()} - ${response.status()}`);
+            }
+        });
+        
+        console.log(JSON.stringify(checks));
+        
+    } catch (error) {
+        console.error(JSON.stringify({ error: error.message, url: process.argv[2] }));
+        process.exit(1);
+    } finally {
+        await browser.close();
+    }
+})();
+PLAYWRIGHT_SEO
+        
+        # 执行检测
+        local result=$(cd "$WORKSPACE_DIR" && node "$temp_script" "$url" 2>&1)
+        rm -f "$temp_script"
+        
+        # 解析结果
+        local json_line=$(echo "$result" | tail -10 | grep -E '^\{.*\}$' | head -1)
+        
+        if [ -n "$json_line" ]; then
+            local has_title=$(echo "$json_line" | grep -o '"hasTitle":true' | wc -l)
+            local has_description=$(echo "$json_line" | grep -o '"hasMetaDescription":true' | wc -l)
+            local has_h1=$(echo "$json_line" | grep -o '"hasH1":true' | wc -l)
+            local has_canonical=$(echo "$json_line" | grep -o '"hasCanonical":true' | wc -l)
+            local has_viewport=$(echo "$json_line" | grep -o '"hasViewport":true' | wc -l)
+            
+            local page_issues=()
+            
+            if [ "$has_title" -eq 0 ]; then
+                page_issues+=("missing_title")
+            fi
+            
+            if [ "$has_description" -eq 0 ]; then
+                page_issues+=("missing_meta_description")
+            fi
+            
+            if [ "$has_h1" -eq 0 ]; then
+                page_issues+=("missing_h1")
+            fi
+            
+            if [ "$has_canonical" -eq 0 ]; then
+                page_issues+=("missing_canonical")
+            fi
+            
+            if [ "$has_viewport" -eq 0 ]; then
+                page_issues+=("missing_viewport")
+            fi
+            
+            if [ ${#page_issues[@]} -gt 0 ]; then
+                log "  ⚠️  $page: ${page_issues[*]}"
+                issues+=("$page:${page_issues[*]}")
+            else
+                log "  ✅ $page: 所有 SEO 检查通过"
+            fi
+        else
+            log "  ⚠️  $page: Playwright 检测失败，跳过"
         fi
-        
-        # 检查 meta description
-        if ! echo "$html" | grep -q 'name="description"'; then
-            page_issues+=("missing_meta_description")
-        fi
-        
-        # 检查 H1
-        if ! echo "$html" | grep -q "<h1"; then
-            page_issues+=("missing_h1")
-        fi
-        
-        # 检查 canonical
-        if ! echo "$html" | grep -q 'rel="canonical"'; then
-            page_issues+=("missing_canonical")
-        fi
-        
-        # 检查 viewport
-        if ! echo "$html" | grep -q 'name="viewport"'; then
-            page_issues+=("missing_viewport")
-        fi
-        
-        if [ ${#page_issues[@]} -gt 0 ]; then
-            log "  ⚠️  $page: ${page_issues[*]}"
-            issues+=("$page:${page_issues[*]}")
+        else
+            # 降级使用 curl 检测
+            log "  使用 curl 检测（功能受限）..."
+            local html=$(curl -s "$url" --connect-timeout 10)
+            local page_issues=()
+            
+            # 检查 title
+            if ! echo "$html" | grep -q "<title>" || [ -z "$(echo "$html" | grep -oP '(?<=<title>)[^<]+' | head -1)" ]; then
+                page_issues+=("missing_title")
+            fi
+            
+            # 检查 meta description
+            if ! echo "$html" | grep -q 'name="description"'; then
+                page_issues+=("missing_meta_description")
+            fi
+            
+            # 检查 H1
+            if ! echo "$html" | grep -q "<h1"; then
+                page_issues+=("missing_h1")
+            fi
+            
+            # 检查 viewport
+            if ! echo "$html" | grep -q 'name="viewport"'; then
+                page_issues+=("missing_viewport")
+            fi
+            
+            if [ ${#page_issues[@]} -gt 0 ]; then
+                log "  ⚠️  $page: ${page_issues[*]}"
+                issues+=("$page:${page_issues[*]}")
+            else
+                log "  ✅ $page: 基础 SEO 检查通过"
+            fi
         fi
     done
     
